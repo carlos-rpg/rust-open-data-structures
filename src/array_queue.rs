@@ -24,7 +24,7 @@ impl<T> Index<usize> for ArrayQueue<T> {
         if index >= self.len {
             panic!("Index out of bounds");
         }
-        &self.array[(self.first + index) % self.len]
+        &self.array[(self.first + index) % self.array.len()]
     }
 }
 
@@ -82,5 +82,17 @@ mod tests {
             len: 3,
         };
         queue[3];
+    }
+
+    #[test]
+    fn index_when_array_and_queue_are_different_len() {
+        let queue = ArrayQueue {
+            array: vec!['a', 'b', 'c', 'w', 'k'],
+            first: 3,
+            len: 3,
+        };
+        assert_eq!(queue[0], 'w');
+        assert_eq!(queue[1], 'k');
+        assert_eq!(queue[2], 'a');
     }
 }
