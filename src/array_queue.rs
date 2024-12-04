@@ -12,8 +12,8 @@ impl<T> ArrayQueue<T> {
         Self { array: Vec::new(), first: usize::MAX, len: 0 }
     }
 
-    fn starts_at_zero(&self) -> bool {
-        self.first == 0
+    pub fn len(&self) -> usize {
+        self.len
     }
 }
 
@@ -21,7 +21,7 @@ impl<T> Index<usize> for ArrayQueue<T> {
     type Output = T;
 
     fn index(&self, index: usize) -> &Self::Output {
-        if index >= self.len {
+        if index >= self.len() {
             panic!("Index out of bounds");
         }
         &self.array[(self.first + index) % self.array.len()]
