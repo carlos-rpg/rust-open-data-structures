@@ -9,7 +9,7 @@ pub struct ArrayQueue<T> {
 
 impl<T> ArrayQueue<T> {
     pub fn initialize() -> Self {
-        Self { array: Vec::new(), first: usize::MAX, len: 0 }
+        Self { array: Vec::new(), first: 0, len: 0 }
     }
 
     pub fn len(&self) -> usize {
@@ -38,7 +38,7 @@ mod tests {
         let queue: ArrayQueue<i32> = ArrayQueue::initialize();
 
         assert!(queue.array.is_empty());
-        assert_eq!(queue.first, usize::MAX);
+        assert_eq!(queue.first, 0);
         assert_eq!(queue.len, 0);
     }
 
