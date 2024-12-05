@@ -15,9 +15,20 @@ impl<T> ArrayQueue<T> {
     pub fn len(&self) -> usize {
         self.len
     }
-}
 
-impl<T> Index<usize> for ArrayQueue<T> {
+    pub fn add(&mut self, x: T) {
+        if self.len() == self.array.len() {
+            self.array.rotate_left(self.first);
+            self.first = 0;
+            self.array.push(x);
+        }
+        else {
+            let target = (self.first + self.len()) % self.array.len();
+            self.array[target] = x;
+        }
+        self.len += 1;
+    }
+
     type Output = T;
 
     fn index(&self, index: usize) -> &Self::Output {
@@ -94,5 +105,40 @@ mod tests {
         assert_eq!(queue[0], 'w');
         assert_eq!(queue[1], 'k');
         assert_eq!(queue[2], 'a');
+    }
+
+    #[test]
+    fn add_to_empty_queue() {
+        let mut queue = ArrayQueue::initialize();
+        queue.add(1);
+        assert_eq!(queue.array, vec![1]);
+        queue.add(2);
+        assert_eq!(queue.array, vec![1, 2]);
+        queue.add(3);
+        assert_eq!(queue.array, vec![1, 2, 3]);
+    }
+
+    #[test]
+    fn add_with_overwrite() {
+        let mut queue = ArrayQueue {
+            array: vec!['a', 'b', 'c', 'd'],
+            first: 1,
+            len: 2,
+        };
+        queue.add('e');
+        assert_eq!(queue.array, vec!['a', 'b', 'c', 'e']);
+        queue.add('f');
+        assert_eq!(queue.array, vec!['f', 'b', 'c', 'e']);
+    }
+
+    #[test]
+    fn add_with_reallocation() {
+        let mut queue = ArrayQueue {
+            array: vec!['a', 'b', 'c', 'd'],
+            first: 2,
+            len: 4,
+        };
+        queue.add('e');
+        assert_eq!(queue.array, vec!['c', 'd', 'a', 'b', 'e']);
     }
 }
