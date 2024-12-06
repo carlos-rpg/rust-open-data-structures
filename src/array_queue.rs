@@ -1,13 +1,13 @@
 use std::usize;
 use std::ops::Index;
 
-pub struct ArrayQueue<T> {
+pub struct ArrayQueue<T: Clone> {
     array: Vec<T>,
     first: usize,
     len: usize,
 }
 
-impl<T> ArrayQueue<T> {
+impl<T: Clone> ArrayQueue<T> {
     pub fn initialize() -> Self {
         Self { array: Vec::new(), first: 0, len: 0 }
     }
@@ -29,6 +29,27 @@ impl<T> ArrayQueue<T> {
         self.len += 1;
     }
 
+    pub fn remove(&mut self) -> Option<T> {
+        if self.len() > 0 {
+            let item = self[0].clone();
+            self.first = (self.first + 1) % self.array.len();
+            self.len -= 1;
+
+            if self.array.capacity() >= 3 * self.len() {
+                self.array.rotate_left(self.first);
+                self.first = 0;
+                self.array.truncate(2 * self.len());
+                self.array.shrink_to_fit();
+            }
+            Some(item)
+        }
+        else {
+            None
+        }
+    }
+}
+
+impl<T: Clone> Index<usize> for ArrayQueue<T> {
     type Output = T;
 
     fn index(&self, index: usize) -> &Self::Output {
@@ -140,5 +161,46 @@ mod tests {
         };
         queue.add('e');
         assert_eq!(queue.array, vec!['c', 'd', 'a', 'b', 'e']);
+    }
+
+    #[test]
+    fn remove_until_empty() {
+        let mut queue = ArrayQueue {
+            array: vec![1, 2, 3],
+            first: 0,
+            len: 3,
+        };
+        assert_eq!(queue.remove(), Some(1));
+        assert_eq!(queue.remove(), Some(2));
+        assert_eq!(queue.remove(), Some(3));
+        assert_eq!(queue.remove(), None);
+        assert_eq!(queue.remove(), None);
+    }
+
+    #[test]
+    fn remove_from_mid_array() {
+        let mut queue = ArrayQueue {
+            array: vec!['a', 'b', 'c'],
+            first: 2,
+            len: 2,
+        };
+        assert_eq!(queue.remove(), Some('c'));
+        assert_eq!(queue.remove(), Some('a'));
+        assert_eq!(queue.remove(), None);
+    }
+
+    #[test]
+    fn remove_with_dealocation() {
+        let mut queue = ArrayQueue {
+            array: vec![1, 2, 3, 4, 5, 6],
+            first: 4,
+            len: 6,
+        };
+        assert_eq!(queue.array.capacity(), 6);
+        queue.remove();
+        queue.remove();
+        queue.remove();
+        queue.remove();
+        assert_eq!(queue.array.capacity(), 4);
     }
 }
