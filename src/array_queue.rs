@@ -18,12 +18,11 @@ impl<T: Clone> ArrayQueue<T> {
 
     pub fn add(&mut self, x: T) {
         if self.len() == self.array.len() {
-            self.array.rotate_left(self.first);
-            self.first = 0;
+            self.rotate();
             self.array.push(x);
         }
         else {
-            let target = (self.first + self.len()) % self.array.len();
+            let target = self.array_index(self.len());
             self.array[target] = x;
         }
         self.len += 1;
@@ -32,12 +31,11 @@ impl<T: Clone> ArrayQueue<T> {
     pub fn remove(&mut self) -> Option<T> {
         if self.len() > 0 {
             let item = self[0].clone();
-            self.first = (self.first + 1) % self.array.len();
+            self.first = self.array_index(1);
             self.len -= 1;
 
             if self.array.capacity() >= 3 * self.len() {
-                self.array.rotate_left(self.first);
-                self.first = 0;
+                self.rotate();
                 self.array.truncate(2 * self.len());
                 self.array.shrink_to_fit();
             }
@@ -46,6 +44,15 @@ impl<T: Clone> ArrayQueue<T> {
         else {
             None
         }
+    }
+
+    fn array_index(&self, queue_index: usize) -> usize {
+        (self.first + queue_index) % self.array.len()
+    }
+
+    fn rotate(&mut self) {
+        self.array.rotate_left(self.first);
+        self.first = 0;
     }
 }
 
@@ -56,7 +63,7 @@ impl<T: Clone> Index<usize> for ArrayQueue<T> {
         if index >= self.len() {
             panic!("Index out of bounds");
         }
-        &self.array[(self.first + index) % self.array.len()]
+        &self.array[self.array_index(index)]
     }
 }
 
