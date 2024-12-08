@@ -67,6 +67,20 @@ impl<T: Clone> Index<usize> for ArrayQueue<T> {
     }
 }
 
+impl<T: Clone> From<Vec<T>> for ArrayQueue<T> {
+    fn from(value: Vec<T>) -> Self {
+        let value_len = value.len();
+        Self { array: value, first: 0, len: value_len }
+    }
+}
+
+impl<T: Clone> Into<Vec<T>> for ArrayQueue<T> {
+    fn into(mut self) -> Vec<T> {
+        self.rotate();
+        self.array[..self.len()].to_vec()
+    }
+}
+
 
 #[cfg(test)]
 mod tests {
@@ -209,5 +223,24 @@ mod tests {
         queue.remove();
         queue.remove();
         assert_eq!(queue.array.capacity(), 4);
+    }
+
+    #[test]
+    fn from_vector() {
+        let queue = ArrayQueue::from(vec![true, false, true]);
+        assert_eq!(queue.array, vec![true, false, true]);
+        assert_eq!(queue.first, 0);
+        assert_eq!(queue.len, 3);
+    }
+
+    #[test]
+    fn to_vector() {
+        let queue = ArrayQueue {
+            array: vec![1, 2, 3],
+            first: 2,
+            len: 2,
+        };
+        let vector: Vec<i32> = queue.into();
+        assert_eq!(vector, vec![3, 1]);
     }
 }
