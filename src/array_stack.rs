@@ -4,6 +4,7 @@ pub struct ArrayStack<T: Clone> {
     array: Vec<T>,
 }
 
+#[derive(PartialEq, Debug)]
 pub struct IndexOutOfBounds;
 
 impl<T: Clone> ArrayStack<T> {
@@ -72,5 +73,89 @@ impl<T: Clone> Index<usize> for ArrayStack<T> {
 
     fn index(&self, index: usize) -> &Self::Output {
         &self.array[index]
+    }
+}
+
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn get_values() {
+        let stack = ArrayStack { 
+            array: vec![10, 20, 30],
+        };
+        assert_eq!(stack.get(1), Some(20));
+        assert_eq!(stack.get(3), None);
+    }
+
+    #[test]
+    fn set_values() {
+        let mut stack = ArrayStack { 
+            array: vec![10, 20, 30],
+        };
+        assert_eq!(stack.set(0, 1), Some(10));
+        assert_eq!(stack.array, vec![1, 20, 30]);
+        assert_eq!(stack.set(3, 4), None);
+        assert_eq!(stack.array, vec![1, 20, 30]);
+    }
+
+    #[test]
+    fn add_values() {
+        let mut stack = ArrayStack { 
+            array: vec!['a', 'b'],
+        };
+        assert_eq!(stack.add(0, 'x'), Ok(()));
+        assert_eq!(stack.array, vec!['x', 'a', 'b']);
+        assert_eq!(stack.add(3, 'y'), Ok(()));
+        assert_eq!(stack.array, vec!['x', 'a', 'b', 'y']);
+        assert_eq!(stack.add(5, 'z'), Err(IndexOutOfBounds));
+        assert_eq!(stack.array, vec!['x', 'a', 'b', 'y'])
+    }
+
+    #[test]
+    fn remove_values() {
+        let mut stack = ArrayStack { 
+            array: vec!['x', 'a', 'b', 'y'],
+        };
+        assert_eq!(stack.remove(2), Ok('b'));
+        assert_eq!(stack.array, vec!['x', 'a', 'y']);
+        assert_eq!(stack.remove(3), Err(IndexOutOfBounds));
+        assert_eq!(stack.array, vec!['x', 'a', 'y']);
+    }
+
+    #[test]
+    fn push_values() {
+        let mut stack = ArrayStack { 
+            array: vec![],
+        };
+        stack.push("foo");
+        assert_eq!(stack.array, vec!["foo"]);
+        stack.push("bar");
+        assert_eq!(stack.array, vec!["foo", "bar"]);
+    }
+
+    #[test]
+    fn pop_values() {
+        let mut stack = ArrayStack { 
+            array: vec!["baz"],
+        };
+        assert_eq!(stack.pop(), Some("baz"));
+        assert_eq!(stack.pop(), None);
+        assert_eq!(stack.pop(), None);
+    }
+
+    #[test]
+    fn shrink_array() {
+        let mut stack = ArrayStack { 
+            array: vec![1, 2, 3],
+        };
+        assert!(!stack.try_shrink());
+        assert_eq!(stack.array.capacity(), 3);
+        stack.array.pop();
+        stack.array.pop();
+        assert!(stack.try_shrink());
+        assert_eq!(stack.array.capacity(), 2);
     }
 }
