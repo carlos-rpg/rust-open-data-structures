@@ -10,7 +10,7 @@ pub enum Error {
 }
 
 impl<T: Clone> ArrayDeque<T> {
-    pub fn initialize() {
+    pub fn initialize() -> Self {
         Self { array: Vec::new(), first: 0, len: 0 }
     }
 
