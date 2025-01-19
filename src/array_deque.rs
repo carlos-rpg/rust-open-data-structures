@@ -35,6 +35,31 @@ impl<T: Clone> ArrayDeque<T> {
         Ok(y)
     }
 
+    pub fn add(&mut self, i: usize, x: T) {
+        if self.len() == self.array.capacity() {
+            self.resize();
+        }
+        let i_array = self.array_index(i);
+
+        if i < self.len() / 2 {
+            for j in 0..self.len() / 2 {
+                let j_array = self.array_index(j);
+                self.array[j_array - 1] = self.array[j_array].clone();
+            }
+            self.array[i_array] = x;
+        }
+        else if i >= self.len() / 2 {
+            self.array.insert(i_array, x);
+        }
+        self.len += 1;
+    }
+
+    fn resize(&mut self) {
+        self.array.rotate_left(self.first);
+        self.first = 0;
+        self.array.reserve(1);
+    }
+
     fn array_index(&self, i: usize) -> usize {
         (self.first + i) % self.array.len()
     }
