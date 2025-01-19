@@ -20,8 +20,8 @@ impl<T: Clone> ArrayDeque<T> {
 
     pub fn get(&self, i: usize) -> Result<T, Error> {
         if i < self.len() {
-            let target = (self.first + i) % self.array.len();
-            Ok(self.array[target].clone())
+            let i_array = self.array_index(i);
+            Ok(self.array[i_array].clone())
         }
         else {
             Err(Error::IndexOutOfBounds(i))
@@ -30,9 +30,13 @@ impl<T: Clone> ArrayDeque<T> {
 
     pub fn set(&mut self, i: usize, x: T) -> Result<T, Error> {
         let y = self.get(i)?;
-        let target = (self.first + i) % self.array.len();
-        self.array[target] = x;
+        let i_array = self.array_index(i);
+        self.array[i_array] = x;
         Ok(y)
+    }
+
+    fn array_index(&self, i: usize) -> usize {
+        (self.first + i) % self.array.len()
     }
 }
 
