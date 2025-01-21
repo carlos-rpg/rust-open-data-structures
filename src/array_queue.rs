@@ -18,12 +18,12 @@ impl<T: Clone> ArrayQueue<T> {
 
     pub fn add(&mut self, x: T) {
         if self.len() == self.array.len() {
-            self.rotate();
+            self.reset_array();
             self.array.push(x);
         }
         else {
-            let target = self.array_index(self.len());
-            self.array[target] = x;
+            let i_array = self.index_array(self.len());
+            self.array[i_array] = x;
         }
         self.len += 1;
     }
@@ -31,11 +31,11 @@ impl<T: Clone> ArrayQueue<T> {
     pub fn remove(&mut self) -> Option<T> {
         if self.len() > 0 {
             let item = self[0].clone();
-            self.first = self.array_index(1);
+            self.first = self.index_array(1);
             self.len -= 1;
 
             if self.array.capacity() >= 3 * self.len() {
-                self.rotate();
+                self.reset_array();
                 self.array.truncate(2 * self.len());
                 self.array.shrink_to_fit();
             }
@@ -46,11 +46,11 @@ impl<T: Clone> ArrayQueue<T> {
         }
     }
 
-    fn array_index(&self, queue_index: usize) -> usize {
-        (self.first + queue_index) % self.array.len()
+    fn index_array(&self, i: usize) -> usize {
+        (self.first + i) % self.array.len()
     }
 
-    fn rotate(&mut self) {
+    fn reset_array(&mut self) {
         self.array.rotate_left(self.first);
         self.first = 0;
     }
@@ -63,7 +63,7 @@ impl<T: Clone> Index<usize> for ArrayQueue<T> {
         if index >= self.len() {
             panic!("Index out of bounds");
         }
-        &self.array[self.array_index(index)]
+        &self.array[self.index_array(index)]
     }
 }
 
@@ -76,7 +76,7 @@ impl<T: Clone> From<Vec<T>> for ArrayQueue<T> {
 
 impl<T: Clone> Into<Vec<T>> for ArrayQueue<T> {
     fn into(mut self) -> Vec<T> {
-        self.rotate();
+        self.reset_array();
         self.array[..self.len()].to_vec()
     }
 }
