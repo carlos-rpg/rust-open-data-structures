@@ -35,8 +35,33 @@ impl<T: Clone> ArrayDeque<T> {
         Ok(y)
     }
 
+    pub fn add(&mut self, i: usize, x: T) {
+        if i > self.len() {
+            panic!("Index out of bounds");
+        }
+        if self.len() == self.array.len() {
+            self.reset_array();
+            self.array.insert(i, x);
+        }
+        else {
+            for j in (i..self.len()).rev() {
+                let j_array = self.index_array(j);
+                let jp1_array = self.index_array(j + 1);
+                self.array[jp1_array] = self.array[j_array].clone();
+            }
+            let i_array = self.index_array(i);
+            self.array[i_array] = x;
+        }
+        self.len += 1;
+    }
+
     fn index_array(&self, i: usize) -> usize {
         (self.first + i) % self.array.len()
+    }
+
+    fn reset_array(&mut self) {
+        self.array.rotate_left(self.first);
+        self.first = 0;
     }
 }
 
@@ -82,5 +107,54 @@ mod tests {
         assert_eq!(queue.array, vec![1, 20, 30]);
         let _ = queue.set(2, 10);
         assert_eq!(queue.array, vec![1, 20, 30]);
+    }
+
+    #[test]
+    fn add_within_array() {
+        let mut queue = ArrayDeque {
+            array: vec![1, 2, 3],
+            first: 1,
+            len: 2,
+        };
+        queue.add(0, 10);
+        assert_eq!(queue.array, vec![3, 10, 2]);
+        assert_eq!(queue.first, 1);
+        assert_eq!(queue.len, 3);
+        queue.add(1, 20);
+        assert_eq!(queue.array, vec![10, 20, 2, 3]);
+        assert_eq!(queue.first, 0);
+        assert_eq!(queue.len, 4);
+    }
+
+    #[test]
+    fn add_as_append() {
+        let mut queue = ArrayDeque {
+            array: vec![1, 2, 3],
+            first: 1,
+            len: 2,
+        };
+        queue.add(2, 10);
+        assert_eq!(queue.array, vec![10, 2, 3]);
+        assert_eq!(queue.first, 1);
+        assert_eq!(queue.len, 3);
+        queue.add(3, 20);
+        assert_eq!(queue.array, vec![2, 3, 10, 20]);
+        assert_eq!(queue.first, 0);
+        assert_eq!(queue.len, 4);
+        queue.add(4, 30);
+        assert_eq!(queue.array, vec![2, 3, 10, 20, 30]);
+        assert_eq!(queue.first, 0);
+        assert_eq!(queue.len, 5);
+    }
+
+    #[test]
+    #[should_panic]
+    fn add_out_of_bounds() {
+        let mut queue = ArrayDeque {
+            array: vec![1, 2, 3],
+            first: 1,
+            len: 2,
+        };
+        queue.add(3, 10);
     }
 }
