@@ -3,13 +3,13 @@ use std::ops::Index;
 
 pub struct ArrayQueue<T: Clone> {
     array: Vec<T>,
-    first: usize,
+    head: usize,
     len: usize,
 }
 
 impl<T: Clone> ArrayQueue<T> {
     pub fn initialize() -> Self {
-        Self { array: Vec::new(), first: 0, len: 0 }
+        Self { array: Vec::new(), head: 0, len: 0 }
     }
 
     pub fn len(&self) -> usize {
@@ -31,7 +31,7 @@ impl<T: Clone> ArrayQueue<T> {
     pub fn remove(&mut self) -> Option<T> {
         if self.len() > 0 {
             let item = self[0].clone();
-            self.first = self.index_array(1);
+            self.head = self.index_array(1);
             self.len -= 1;
 
             if self.array.capacity() >= 3 * self.len() {
@@ -47,12 +47,12 @@ impl<T: Clone> ArrayQueue<T> {
     }
 
     fn index_array(&self, i: usize) -> usize {
-        (self.first + i) % self.array.len()
+        (self.head + i) % self.array.len()
     }
 
     fn reset_array(&mut self) {
-        self.array.rotate_left(self.first);
-        self.first = 0;
+        self.array.rotate_left(self.head);
+        self.head = 0;
     }
 }
 
@@ -70,7 +70,7 @@ impl<T: Clone> Index<usize> for ArrayQueue<T> {
 impl<T: Clone> From<Vec<T>> for ArrayQueue<T> {
     fn from(value: Vec<T>) -> Self {
         let value_len = value.len();
-        Self { array: value, first: 0, len: value_len }
+        Self { array: value, head: 0, len: value_len }
     }
 }
 
@@ -91,7 +91,7 @@ mod tests {
         let queue: ArrayQueue<i32> = ArrayQueue::initialize();
 
         assert!(queue.array.is_empty());
-        assert_eq!(queue.first, 0);
+        assert_eq!(queue.head, 0);
         assert_eq!(queue.len, 0);
     }
 
@@ -106,7 +106,7 @@ mod tests {
     fn index_starts_at_zero() {
         let queue = ArrayQueue {
             array: vec!['a', 'b', 'c'],
-            first: 0,
+            head: 0,
             len: 3,
         };
         assert_eq!(queue[0], 'a');
@@ -118,7 +118,7 @@ mod tests {
     fn index_starts_at_nonzero() {
         let queue = ArrayQueue {
             array: vec!['a', 'b', 'c'],
-            first: 1,
+            head: 1,
             len: 3,
         };
         assert_eq!(queue[0], 'b');
@@ -131,7 +131,7 @@ mod tests {
     fn index_out_of_queue_bounds() {
         let queue = ArrayQueue {
             array: vec!['a', 'b', 'c', 'w', 'k'],
-            first: 2,
+            head: 2,
             len: 3,
         };
         queue[3];
@@ -141,7 +141,7 @@ mod tests {
     fn index_when_array_and_queue_are_different_len() {
         let queue = ArrayQueue {
             array: vec!['a', 'b', 'c', 'w', 'k'],
-            first: 3,
+            head: 3,
             len: 3,
         };
         assert_eq!(queue[0], 'w');
@@ -164,7 +164,7 @@ mod tests {
     fn add_with_overwrite() {
         let mut queue = ArrayQueue {
             array: vec!['a', 'b', 'c', 'd'],
-            first: 1,
+            head: 1,
             len: 2,
         };
         queue.add('e');
@@ -177,7 +177,7 @@ mod tests {
     fn add_with_reallocation() {
         let mut queue = ArrayQueue {
             array: vec!['a', 'b', 'c', 'd'],
-            first: 2,
+            head: 2,
             len: 4,
         };
         queue.add('e');
@@ -188,7 +188,7 @@ mod tests {
     fn remove_until_empty() {
         let mut queue = ArrayQueue {
             array: vec![1, 2, 3],
-            first: 0,
+            head: 0,
             len: 3,
         };
         assert_eq!(queue.remove(), Some(1));
@@ -202,7 +202,7 @@ mod tests {
     fn remove_from_mid_array() {
         let mut queue = ArrayQueue {
             array: vec!['a', 'b', 'c'],
-            first: 2,
+            head: 2,
             len: 2,
         };
         assert_eq!(queue.remove(), Some('c'));
@@ -214,7 +214,7 @@ mod tests {
     fn remove_with_dealocation() {
         let mut queue = ArrayQueue {
             array: vec![1, 2, 3, 4, 5, 6],
-            first: 4,
+            head: 4,
             len: 6,
         };
         assert_eq!(queue.array.capacity(), 6);
@@ -229,7 +229,7 @@ mod tests {
     fn from_vector() {
         let queue = ArrayQueue::from(vec![true, false, true]);
         assert_eq!(queue.array, vec![true, false, true]);
-        assert_eq!(queue.first, 0);
+        assert_eq!(queue.head, 0);
         assert_eq!(queue.len, 3);
     }
 
@@ -237,7 +237,7 @@ mod tests {
     fn to_vector() {
         let queue = ArrayQueue {
             array: vec![1, 2, 3],
-            first: 2,
+            head: 2,
             len: 2,
         };
         let vector: Vec<i32> = queue.into();
