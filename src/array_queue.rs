@@ -16,8 +16,16 @@ impl<T: Clone> ArrayQueue<T> {
         self.len
     }
 
+    pub fn is_full(&self) -> bool {
+        self.len() == self.array.len()
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.len() == 0
+    }
+
     pub fn add(&mut self, x: T) {
-        if self.len() == self.array.len() {
+        if self.is_full() {
             self.reset_array();
             self.array.push(x);
         }
@@ -29,7 +37,7 @@ impl<T: Clone> ArrayQueue<T> {
     }
 
     pub fn remove(&mut self) -> Option<T> {
-        if self.len() > 0 {
+        if !self.is_empty() {
             let item = self[0].clone();
             self.head = self.index_array(1);
             self.len -= 1;
