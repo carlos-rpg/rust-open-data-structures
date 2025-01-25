@@ -110,6 +110,36 @@ mod tests {
     }
 
     #[test]
+    fn add_as_push() {
+        let mut queue = ArrayDeque {
+            array: vec![],
+            first: 0,
+            len: 0,
+        };
+        queue.add(0, 'a');
+        queue.add(1, 'b');
+        queue.add(2, 'c');
+        assert_eq!(queue.array, vec!['a', 'b', 'c']);
+        assert_eq!(queue.first, 0);
+        assert_eq!(queue.len, 3);
+    }
+
+    #[test]
+    fn add_as_front_insertion() {
+        let mut queue = ArrayDeque {
+            array: vec![],
+            first: 0,
+            len: 0,
+        };
+        queue.add(0, 'a');
+        queue.add(0, 'b');
+        queue.add(0, 'c');
+        assert_eq!(queue.array, vec!['c', 'b', 'a']);
+        assert_eq!(queue.first, 0);
+        assert_eq!(queue.len, 3);
+    }
+
+    #[test]
     fn add_within_array() {
         let mut queue = ArrayDeque {
             array: vec![1, 2, 3],
