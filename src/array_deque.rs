@@ -1,3 +1,5 @@
+use std::ops::{Index, IndexMut};
+
 pub struct ArrayDeque<T> {
     array: Vec<T>,
     head: usize,
@@ -55,6 +57,10 @@ impl<T: Clone> ArrayDeque<T> {
         self.len += 1;
     }
 
+    fn is_out_of_bounds(&self, index: usize) -> bool {
+        index >= self.len()
+    }
+
     fn index_array(&self, i: usize) -> usize {
         (self.head + i) % self.array.len()
     }
@@ -65,10 +71,66 @@ impl<T: Clone> ArrayDeque<T> {
     }
 }
 
+impl<T: Clone> Index<usize> for ArrayDeque<T> {
+    type Output = T;
+
+    fn index(&self, index: usize) -> &Self::Output {
+        if self.is_out_of_bounds(index) {
+            panic!("Index out of bounds");
+        }
+        &self.array[self.index_array(index)]
+    }
+}
+
+impl<T: Clone> IndexMut<usize> for ArrayDeque<T> {
+    fn index_mut(&mut self, index: usize) -> &mut Self::Output {
+        if self.is_out_of_bounds(index) {
+            panic!("Index out of bounds");
+        }
+        let i = self.index_array(index);
+        &mut self.array[i]
+    }
+}
 
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn index_get_and_set() {
+        let mut queue = ArrayDeque { 
+            array: vec!['a', 'b', 'c'],
+            head: 2,
+            len: 2,
+        };
+        assert_eq!(queue[0], 'c');
+        assert_eq!(queue[1], 'a');
+        queue[0] = 'x';
+        queue[1] = 'y';
+        assert_eq!(queue.array, vec!['y', 'b', 'x']);
+    }
+
+    #[test]
+    #[should_panic]
+    fn index_out_of_bounds() {
+        let queue = ArrayDeque { 
+            array: vec!['a', 'b', 'c'],
+            head: 2,
+            len: 2,
+        };
+        queue[2];
+    }
+
+    #[test]
+    #[should_panic]
+    fn index_mut_out_of_bounds() {
+        let mut queue = ArrayDeque { 
+            array: vec!['a', 'b', 'c'],
+            head: 2,
+            len: 2,
+        };
+        queue[2] = 'x';
+    }
 
     #[test]
     fn get() {
