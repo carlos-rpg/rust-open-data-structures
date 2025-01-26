@@ -20,6 +20,10 @@ impl<T: Clone> ArrayDeque<T> {
         self.len
     }
 
+    pub fn is_full(&self) -> bool {
+        self.len() == self.array.len()
+    }
+
     pub fn get(&self, i: usize) -> Result<T, Error> {
         if !self.is_out_of_index_bounds(i) {
             Ok(self[i].clone())
@@ -39,15 +43,15 @@ impl<T: Clone> ArrayDeque<T> {
         if self.is_out_of_insert_bounds(i) {
             panic!("Insertion index out of bounds");
         }
-        if self.len() == self.array.len() {
+        if self.is_full() {
             self.reset_array();
             self.array.insert(i, x);
         }
         else {
-            for j in (i..self.len()).rev() {
+            for j in (i + 1..=self.len()).rev() {
                 let j_array = self.index_array(j);
-                let jp1_array = self.index_array(j + 1);
-                self.array[jp1_array] = self.array[j_array].clone();
+                let jm1_array = self.index_array(j - 1);
+                self.array[j_array] = self.array[jm1_array].clone();
             }
             let i_array = self.index_array(i);
             self.array[i_array] = x;
