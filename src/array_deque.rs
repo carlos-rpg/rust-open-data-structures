@@ -21,7 +21,7 @@ impl<T: Clone> ArrayDeque<T> {
     }
 
     pub fn get(&self, i: usize) -> Result<T, Error> {
-        if !self.is_out_of_bounds(i) {
+        if !self.is_out_of_index_bounds(i) {
             Ok(self[i].clone())
         }
         else {
@@ -36,8 +36,8 @@ impl<T: Clone> ArrayDeque<T> {
     }
 
     pub fn add(&mut self, i: usize, x: T) {
-        if i > self.len() {
-            panic!("Index out of bounds");
+        if self.is_out_of_insert_bounds(i) {
+            panic!("Insertion index out of bounds");
         }
         if self.len() == self.array.len() {
             self.reset_array();
@@ -55,8 +55,12 @@ impl<T: Clone> ArrayDeque<T> {
         self.len += 1;
     }
 
-    fn is_out_of_bounds(&self, index: usize) -> bool {
-        index >= self.len()
+    fn is_out_of_index_bounds(&self, i: usize) -> bool {
+        i >= self.len()
+    }
+
+    fn is_out_of_insert_bounds(&self, i: usize) -> bool {
+        i > self.len()
     }
 
     fn index_array(&self, i: usize) -> usize {
@@ -73,7 +77,7 @@ impl<T: Clone> Index<usize> for ArrayDeque<T> {
     type Output = T;
 
     fn index(&self, index: usize) -> &Self::Output {
-        if self.is_out_of_bounds(index) {
+        if self.is_out_of_index_bounds(index) {
             panic!("Index out of bounds");
         }
         &self.array[self.index_array(index)]
@@ -82,7 +86,7 @@ impl<T: Clone> Index<usize> for ArrayDeque<T> {
 
 impl<T: Clone> IndexMut<usize> for ArrayDeque<T> {
     fn index_mut(&mut self, index: usize) -> &mut Self::Output {
-        if self.is_out_of_bounds(index) {
+        if self.is_out_of_index_bounds(index) {
             panic!("Index out of bounds");
         }
         let i = self.index_array(index);
