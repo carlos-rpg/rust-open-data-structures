@@ -1,6 +1,6 @@
 pub struct ArrayDeque<T> {
     array: Vec<T>,
-    first: usize,
+    head: usize,
     len: usize,
 }
 
@@ -11,7 +11,7 @@ pub enum Error {
 
 impl<T: Clone> ArrayDeque<T> {
     pub fn initialize() -> Self {
-        Self { array: Vec::new(), first: 0, len: 0 }
+        Self { array: Vec::new(), head: 0, len: 0 }
     }
 
     pub fn len(&self) -> usize {
@@ -56,12 +56,12 @@ impl<T: Clone> ArrayDeque<T> {
     }
 
     fn index_array(&self, i: usize) -> usize {
-        (self.first + i) % self.array.len()
+        (self.head + i) % self.array.len()
     }
 
     fn reset_array(&mut self) {
-        self.array.rotate_left(self.first);
-        self.first = 0;
+        self.array.rotate_left(self.head);
+        self.head = 0;
     }
 }
 
@@ -74,7 +74,7 @@ mod tests {
     fn get() {
         let queue = ArrayDeque { 
             array: vec!['a', 'b', 'c'],
-            first: 2,
+            head: 2,
             len: 2,
         };
         assert_eq!(queue.get(0), Ok('c'));
@@ -86,7 +86,7 @@ mod tests {
     fn set_check_output() {
         let mut queue = ArrayDeque {
             array: vec![1, 2, 3],
-            first: 1,
+            head: 1,
             len: 2,
         };
         assert_eq!(queue.set(0, 20), Ok(2));
@@ -98,7 +98,7 @@ mod tests {
     fn set_check_array() {
         let mut queue = ArrayDeque {
             array: vec![1, 2, 3],
-            first: 1,
+            head: 1,
             len: 2,
         };
         let _ = queue.set(0, 20);
@@ -113,14 +113,14 @@ mod tests {
     fn add_as_push() {
         let mut queue = ArrayDeque {
             array: vec![],
-            first: 0,
+            head: 0,
             len: 0,
         };
         queue.add(0, 'a');
         queue.add(1, 'b');
         queue.add(2, 'c');
         assert_eq!(queue.array, vec!['a', 'b', 'c']);
-        assert_eq!(queue.first, 0);
+        assert_eq!(queue.head, 0);
         assert_eq!(queue.len, 3);
     }
 
@@ -128,14 +128,14 @@ mod tests {
     fn add_as_front_insertion() {
         let mut queue = ArrayDeque {
             array: vec![],
-            first: 0,
+            head: 0,
             len: 0,
         };
         queue.add(0, 'a');
         queue.add(0, 'b');
         queue.add(0, 'c');
         assert_eq!(queue.array, vec!['c', 'b', 'a']);
-        assert_eq!(queue.first, 0);
+        assert_eq!(queue.head, 0);
         assert_eq!(queue.len, 3);
     }
 
@@ -143,16 +143,16 @@ mod tests {
     fn add_within_array() {
         let mut queue = ArrayDeque {
             array: vec![1, 2, 3],
-            first: 1,
+            head: 1,
             len: 2,
         };
         queue.add(0, 10);
         assert_eq!(queue.array, vec![3, 10, 2]);
-        assert_eq!(queue.first, 1);
+        assert_eq!(queue.head, 1);
         assert_eq!(queue.len, 3);
         queue.add(1, 20);
         assert_eq!(queue.array, vec![10, 20, 2, 3]);
-        assert_eq!(queue.first, 0);
+        assert_eq!(queue.head, 0);
         assert_eq!(queue.len, 4);
     }
 
@@ -160,20 +160,20 @@ mod tests {
     fn add_as_append() {
         let mut queue = ArrayDeque {
             array: vec![1, 2, 3],
-            first: 1,
+            head: 1,
             len: 2,
         };
         queue.add(2, 10);
         assert_eq!(queue.array, vec![10, 2, 3]);
-        assert_eq!(queue.first, 1);
+        assert_eq!(queue.head, 1);
         assert_eq!(queue.len, 3);
         queue.add(3, 20);
         assert_eq!(queue.array, vec![2, 3, 10, 20]);
-        assert_eq!(queue.first, 0);
+        assert_eq!(queue.head, 0);
         assert_eq!(queue.len, 4);
         queue.add(4, 30);
         assert_eq!(queue.array, vec![2, 3, 10, 20, 30]);
-        assert_eq!(queue.first, 0);
+        assert_eq!(queue.head, 0);
         assert_eq!(queue.len, 5);
     }
 
@@ -182,7 +182,7 @@ mod tests {
     fn add_out_of_bounds() {
         let mut queue = ArrayDeque {
             array: vec![1, 2, 3],
-            first: 1,
+            head: 1,
             len: 2,
         };
         queue.add(3, 10);
