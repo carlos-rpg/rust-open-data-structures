@@ -1,8 +1,7 @@
-use std::ops::{Index, IndexMut};
+use crate::circular_vec::CircularVec;
 
 pub struct ArrayDeque<T> {
-    array: Vec<T>,
-    head: usize,
+    array: CircularVec<T>,
     len: usize,
 }
 
@@ -13,7 +12,7 @@ pub enum Error {
 
 impl<T: Clone> ArrayDeque<T> {
     pub fn initialize() -> Self {
-        Self { array: Vec::new(), head: 0, len: 0 }
+        Self { array: CircularVec::new(vec![], 0), len: 0 }
     }
 
     pub fn len(&self) -> usize {
@@ -26,7 +25,7 @@ impl<T: Clone> ArrayDeque<T> {
 
     pub fn get(&self, i: usize) -> Result<T, Error> {
         if !self.is_out_of_index_bounds(i) {
-            Ok(self[i].clone())
+            Ok(self.array[i].clone())
         }
         else {
             Err(Error::IndexOutOfBounds(i))
@@ -35,7 +34,7 @@ impl<T: Clone> ArrayDeque<T> {
 
     pub fn set(&mut self, i: usize, x: T) -> Result<T, Error> {
         let y = self.get(i)?;
-        self[i] = x;
+        self.array[i] = x;
         Ok(y)
     }
 
@@ -66,36 +65,6 @@ impl<T: Clone> ArrayDeque<T> {
     fn is_out_of_insert_bounds(&self, i: usize) -> bool {
         i > self.len()
     }
-
-    fn index_array(&self, i: usize) -> usize {
-        (self.head + i) % self.array.len()
-    }
-
-    fn reset_array(&mut self) {
-        self.array.rotate_left(self.head);
-        self.head = 0;
-    }
-}
-
-impl<T: Clone> Index<usize> for ArrayDeque<T> {
-    type Output = T;
-
-    fn index(&self, index: usize) -> &Self::Output {
-        if self.is_out_of_index_bounds(index) {
-            panic!("Index out of bounds");
-        }
-        &self.array[self.index_array(index)]
-    }
-}
-
-impl<T: Clone> IndexMut<usize> for ArrayDeque<T> {
-    fn index_mut(&mut self, index: usize) -> &mut Self::Output {
-        if self.is_out_of_index_bounds(index) {
-            panic!("Index out of bounds");
-        }
-        let i = self.index_array(index);
-        &mut self.array[i]
-    }
 }
 
 #[cfg(test)]
@@ -103,46 +72,9 @@ mod tests {
     use super::*;
 
     #[test]
-    fn index_get_and_set() {
-        let mut queue = ArrayDeque { 
-            array: vec!['a', 'b', 'c'],
-            head: 2,
-            len: 2,
-        };
-        assert_eq!(queue[0], 'c');
-        assert_eq!(queue[1], 'a');
-        queue[0] = 'x';
-        queue[1] = 'y';
-        assert_eq!(queue.array, vec!['y', 'b', 'x']);
-    }
-
-    #[test]
-    #[should_panic]
-    fn index_out_of_bounds() {
-        let queue = ArrayDeque { 
-            array: vec!['a', 'b', 'c'],
-            head: 2,
-            len: 2,
-        };
-        queue[2];
-    }
-
-    #[test]
-    #[should_panic]
-    fn index_mut_out_of_bounds() {
-        let mut queue = ArrayDeque { 
-            array: vec!['a', 'b', 'c'],
-            head: 2,
-            len: 2,
-        };
-        queue[2] = 'x';
-    }
-
-    #[test]
     fn get() {
         let queue = ArrayDeque { 
-            array: vec!['a', 'b', 'c'],
-            head: 2,
+            array: CircularVec::new(vec!['a', 'b', 'c'], 2),
             len: 2,
         };
         assert_eq!(queue.get(0), Ok('c'));
@@ -153,8 +85,7 @@ mod tests {
     #[test]
     fn set_check_output() {
         let mut queue = ArrayDeque {
-            array: vec![1, 2, 3],
-            head: 1,
+            array: CircularVec::new(vec![1, 2, 3], 1),
             len: 2,
         };
         assert_eq!(queue.set(0, 20), Ok(2));
@@ -165,16 +96,15 @@ mod tests {
     #[test]
     fn set_check_array() {
         let mut queue = ArrayDeque {
-            array: vec![1, 2, 3],
-            head: 1,
+            array: CircularVec::new(vec![1, 2, 3], 1),
             len: 2,
         };
         let _ = queue.set(0, 20);
-        assert_eq!(queue.array, vec![1, 20, 3]);
+        assert_eq!(queue.array, CircularVec::new(vec![1, 20, 3], 1));
         let _ = queue.set(1, 30);
-        assert_eq!(queue.array, vec![1, 20, 30]);
+        assert_eq!(queue.array, CircularVec::new(vec![1, 20, 30], 1));
         let _ = queue.set(2, 10);
-        assert_eq!(queue.array, vec![1, 20, 30]);
+        assert_eq!(queue.array, CircularVec::new(vec![1, 20, 30], 1));
     }
 
     // #[test]
