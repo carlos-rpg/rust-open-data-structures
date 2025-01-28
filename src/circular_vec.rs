@@ -1,13 +1,19 @@
 use std::ops::{Index, IndexMut};
 
+#[derive(Debug, PartialEq)]
 pub struct CircularVec<T> {
     storage: Vec<T>,
     head: usize,
 }
 
 impl<T> CircularVec<T> {
-    pub fn new() -> Self {
-        Self { storage: Vec::new(), head: 0 }
+    pub fn new(storage: Vec<T>, head: usize) -> Self {
+        if storage.is_empty() && head == 0 || head < storage.len() {
+            Self { storage, head }
+        }
+        else {
+            panic!("Incompatible `storage` length and `head` value");
+        }
     }
 
     pub fn len(&self) -> usize {
@@ -39,9 +45,25 @@ mod tests {
     use super::*;
 
     #[test]
+    fn new_circular_vector() {
+        let empty: CircularVec<i32> = CircularVec::new(vec![], 0);
+        assert_eq!(empty, CircularVec { storage: vec![], head: 0 });
+        let one = CircularVec::new(vec!['a'], 0);
+        assert_eq!(one, CircularVec { storage: vec!['a'], head: 0});
+        let many = CircularVec::new(vec!['x', 'y'], 1);
+        assert_eq!(many, CircularVec { storage: vec!['x', 'y'], head: 1});
+    }
+
+    #[test]
+    #[should_panic]
+    fn new_invalid() {
+        let _invalid: CircularVec<i32> = CircularVec::new(vec![], 1);
+    }
+
+    #[test]
     #[should_panic]
     fn index_empty() {
-        let cv: CircularVec<i32> = CircularVec::new();
+        let cv: CircularVec<i32> = CircularVec { storage: Vec::new(), head: 0 };
         cv[0];
     }
 
