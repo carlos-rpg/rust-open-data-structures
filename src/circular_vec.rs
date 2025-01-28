@@ -20,6 +20,15 @@ impl<T> CircularVec<T> {
         self.storage.len()
     }
 
+    pub fn shift_head(&mut self, n: isize) {
+        let self_len: isize = match self.len().try_into() {
+            Ok(val) => val,
+            Err(_) => panic!("Unable to cast usize into isize"),
+        };
+        let n_equivalent = n.rem_euclid(self_len) as usize;
+        self.head = self.circle_index(n_equivalent);
+    }
+
     fn circle_index(&self, i: usize) -> usize {
         (self.head + i) % self.len()
     }
@@ -102,5 +111,41 @@ mod tests {
         assert_eq!(cv.storage[2], 20);
         cv[2] = 30;
         assert_eq!(cv.storage[0], 30);
+    }
+
+    #[test]
+    fn shift_head_right() {
+        let mut cv = CircularVec {
+            storage: vec!['a', 'b', 'c', 'd'],
+            head: 1,
+        };
+        cv.shift_head(0);
+        assert_eq!(cv.head, 1);
+        cv.shift_head(1);
+        assert_eq!(cv.head, 2);
+        cv.shift_head(2);
+        assert_eq!(cv.head, 0);
+    }
+
+    #[test]
+    fn shift_head_left() {
+        let mut cv = CircularVec {
+            storage: vec!['a', 'b', 'c', 'd'],
+            head: 2,
+        };
+        cv.shift_head(-1);
+        assert_eq!(cv.head, 1);
+        cv.shift_head(-2);
+        assert_eq!(cv.head, 3);
+    }
+
+    #[test]
+    #[should_panic]
+    fn shift_head_empty() {
+        let mut cv: CircularVec<i32> = CircularVec {
+            storage: vec![],
+            head: 0,
+        };
+        cv.shift_head(1);
     }
 }
