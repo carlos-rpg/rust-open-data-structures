@@ -1,12 +1,12 @@
 use std::ops::{Index, IndexMut};
 
 #[derive(Debug, PartialEq)]
-pub struct CircularVec<T> {
+pub struct CircularVec<T: Clone> {
     storage: Vec<T>,
     head: usize,
 }
 
-impl<T> CircularVec<T> {
+impl<T: Clone> CircularVec<T> {
     pub fn new(storage: Vec<T>, head: usize) -> Self {
         if storage.is_empty() && head == 0 || head < storage.len() {
             Self { storage, head }
@@ -29,12 +29,18 @@ impl<T> CircularVec<T> {
         self.head = self.circle_index(n_equivalent);
     }
 
+    pub fn resize(&mut self, new_len: usize, value: T) {
+        self.storage.rotate_left(self.head);
+        self.head = 0;
+        self.storage.resize(new_len, value);
+    }
+
     fn circle_index(&self, i: usize) -> usize {
         (self.head + i) % self.len()
     }
 }
 
-impl<T> Index<usize> for CircularVec<T> {
+impl<T: Clone> Index<usize> for CircularVec<T> {
     type Output = T;
 
     fn index(&self, index: usize) -> &Self::Output {
@@ -42,7 +48,7 @@ impl<T> Index<usize> for CircularVec<T> {
     }
 }
 
-impl<T> IndexMut<usize> for CircularVec<T> {
+impl<T: Clone> IndexMut<usize> for CircularVec<T> {
     fn index_mut(&mut self, index: usize) -> &mut Self::Output {
         let i = self.circle_index(index);
         &mut self.storage[i]
@@ -147,5 +153,38 @@ mod tests {
             head: 0,
         };
         cv.shift_head(1);
+    }
+
+    #[test]
+    fn resize_grow() {
+        let mut cv: CircularVec<char> = CircularVec { storage: vec![], head: 0 };
+        cv.resize(1, 'a');
+        assert_eq!(cv, CircularVec { storage: vec!['a'], head: 0 });
+        cv.resize(3, 'b');
+        assert_eq!(cv, CircularVec { storage: vec!['a', 'b', 'b'], head: 0 });
+    }
+    
+    #[test]
+    fn resize_shrink() {
+        let mut cv = CircularVec {
+            storage: vec!['a', 'b', 'c', 'd'],
+            head: 0
+        };
+        cv.resize(3, 'z');
+        assert_eq!(cv, CircularVec { storage: vec!['a', 'b', 'c'], head: 0 });
+        cv.resize(1, 'z');
+        assert_eq!(cv, CircularVec { storage: vec!['a'], head: 0 });
+        cv.resize(0, 'z');
+        assert_eq!(cv, CircularVec { storage: vec![], head: 0 });
+    }
+
+    #[test]
+    fn resize_rotate() {
+        let mut cv = CircularVec {
+            storage: vec![3, 4, 1, 2],
+            head: 2,
+        };
+        cv.resize(5, 5);
+        assert_eq!(cv, CircularVec { storage: vec![1, 2, 3, 4, 5], head: 0 });
     }
 }
