@@ -1,6 +1,6 @@
 use crate::circular_vec::CircularVec;
 
-pub struct ArrayDeque<T> {
+pub struct ArrayDeque<T: Clone + PartialEq> {
     array: CircularVec<T>,
     len: usize,
 }
@@ -10,7 +10,7 @@ pub enum Error {
     IndexOutOfBounds(usize),
 }
 
-impl<T: Clone> ArrayDeque<T> {
+impl<T: Clone + PartialEq> ArrayDeque<T> {
     pub fn initialize() -> Self {
         Self { array: CircularVec::new(vec![], 0), len: 0 }
     }
@@ -64,6 +64,17 @@ impl<T: Clone> ArrayDeque<T> {
 
     fn is_out_of_insert_bounds(&self, i: usize) -> bool {
         i > self.len()
+    }
+}
+
+impl<T: Clone + PartialEq> PartialEq for ArrayDeque<T> {
+    fn eq(&self, other: &Self) -> bool {
+        if self.len() != other.len() {
+            false
+        }
+        else {
+            (0..self.len()).all(|i| self.array[i] == other.array[i])
+        }
     }
 }
 
@@ -185,4 +196,35 @@ mod tests {
     //     };
     //     queue.add(3, 10);
     // }
+
+    #[test]
+    fn partial_equivalence_full() {
+        let q1 = ArrayDeque {
+            array: CircularVec::new(vec![1, 2, 3, 4], 2),
+            len: 3,
+        };
+        let q2 = ArrayDeque {
+            array: CircularVec::new(vec![10, 3, 4, 1], 1),
+            len: 3,
+        };
+        let q3 = ArrayDeque {
+            array: CircularVec::new(vec![10, 3, 4, 1], 1),
+            len: 2,
+        };
+        assert!(q1 == q2);
+        assert!(q2 != q3);
+    }
+
+    #[test]
+    fn partial_equivalence_empty() {
+        let q1: ArrayDeque<i32> = ArrayDeque {
+            array: CircularVec::new(vec![], 0),
+            len: 0,
+        };
+        let q2 = ArrayDeque {
+            array: CircularVec::new(vec![10, 3, 4, 1], 1),
+            len: 0,
+        };
+        assert!(q1 == q2);
+    }
 }
