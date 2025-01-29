@@ -77,9 +77,9 @@ impl<T: Clone + PartialEq> ArrayDeque<T> {
 impl<T: Clone + PartialEq> PartialEq for ArrayDeque<T> {
     fn eq(&self, other: &Self) -> bool {
         self.len() == other.len() &&
-            (0..self.len()).all(|i| self.array[i] == other.array[i])
-        }
+        (0..self.len()).all(|i| self.array[i] == other.array[i])
     }
+}
 
 
 #[cfg(test)]
