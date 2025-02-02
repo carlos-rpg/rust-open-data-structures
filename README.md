@@ -23,10 +23,13 @@ sacrifice clarity for performance.
 2. Array based lists
 - ✔️ ArrayStack
 - ✔️ ArrayQueue
-- ❌ ArrayDeque 
+- ✔️ ArrayDeque 
 - ❌ DualArrayDeque
 - ❌ RootishArrayStack
 3. Linked lists
+- ❌ SLList
+- ❌ DLList
+- ❌ SEList
 4. Skip lists
 5. Hash tables
 6. Binary trees
