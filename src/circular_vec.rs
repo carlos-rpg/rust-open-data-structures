@@ -32,7 +32,12 @@ impl<T: Clone> CircularVec<T> {
     pub fn resize(&mut self, new_len: usize, value: T) {
         self.storage.rotate_left(self.head);
         self.head = 0;
+        let old_len = self.len();
         self.storage.resize(new_len, value);
+
+        if new_len < old_len {
+            self.storage.shrink_to_fit();
+        }
     }
 
     fn circle_index(&self, i: usize) -> usize {
