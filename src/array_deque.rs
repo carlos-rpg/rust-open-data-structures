@@ -159,21 +159,24 @@ mod tests {
         assert_eq!(q1, q2);
     }
 
-    // #[test]
-    // fn add_mid_insertion() {
-    //     let mut q1 = ArrayDeque {
-    //         array: CircularVec::new(vec![1, 2, 3], 1),
-    //         len: 2,
-    //     };
-    //     q1.add(0, 10);
-    //     q1.add(1, 20);
+    #[test]
+    fn add_mid_insertion() {
+        let mut q1 = ArrayDeque {
+            array: CircularVec::new(vec!['0', 'a', 'b', 'd', 'e', 'f', 'g', 'h', '0', '0', '0', '0'], 1),
+            len: 7,
+        };
+        let _o1 = q1.add(4, 'x');
+        let _o2 = q1.add(3, 'y');
+        let _o3 = q1.add(4, 'z');
+        let o4 = q1.add(11, '1');
 
-    //     let mut q1 = ArrayDeque {
-    //         array: CircularVec::new(vec![1, 2, 3], 1),
-    //         len: 2,
-    //     };
-    //     assert_eq!(q1.array, vec![10, 20, 2, 3]);
-    // }
+        let q2 = ArrayDeque {
+            array: CircularVec::new(vec!['b', 'd', 'y', 'z', 'e', 'x', 'f', 'g', 'h', '0', '0', 'a'], 11),
+            len: 10,
+        };
+        assert_eq!(q1, q2);
+        assert_eq!(o4, Err(Error::IndexOutOfBounds(11)));
+    }
 
     #[test]
     fn partial_equivalence_full() {
