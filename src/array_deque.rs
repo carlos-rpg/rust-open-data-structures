@@ -189,8 +189,8 @@ mod tests {
             array: CircularVec::new(vec![10, 3, 4, 1], 1),
             len: 2,
         };
-        assert!(q1 == q2);
-        assert!(q2 != q3);
+        assert_eq!(q1, q2);
+        assert_ne!(q2, q3);
     }
 
     #[test]
@@ -203,6 +203,6 @@ mod tests {
             array: CircularVec::new(vec![10, 3, 4, 1], 1),
             len: 0,
         };
-        assert!(q1 == q2);
+        assert_eq!(q1, q2);
     }
 }
