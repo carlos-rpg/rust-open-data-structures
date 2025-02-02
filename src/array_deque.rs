@@ -65,6 +65,33 @@ impl<T: Clone + PartialEq> ArrayDeque<T> {
         }
     }
 
+    pub fn remove(&mut self, i: usize) -> Result<T, Error> {
+        if self.is_out_of_index_bounds(i) {
+            Err(Error::IndexOutOfBounds(i))
+        }
+        else {
+            let x = self.array[i].clone();
+
+            if i < self.len() / 2 {
+                for j in (1..=i).rev() {
+                    self.array[j] = self.array[j - 1].clone();
+                }
+            self.array.shift_head(1);
+            }
+            else {
+                for j in i..self.len() {
+                    self.array[j] = self.array[j + 1].clone();
+                }
+            }
+            self.len -= 1;
+
+            if self.array.len() >= 3 * self.len() {
+                self.array.resize((self.array.len() / 2).max(1), x.clone());
+            }
+            Ok(x)
+        }
+    }
+
     fn is_out_of_index_bounds(&self, i: usize) -> bool {
         i >= self.len()
     }
@@ -204,6 +231,54 @@ mod tests {
         };
         let q2 = ArrayDeque {
             array: CircularVec::new(vec![10, 3, 4, 1], 1),
+            len: 0,
+        };
+        assert_eq!(q1, q2);
+    }
+
+    #[test]
+    fn remove_from_back() {
+        let mut q1: ArrayDeque<char> = ArrayDeque {
+            array: CircularVec::new(vec!['c', 'd', 'a', 'b'], 2),
+            len: 4,
+        };
+        let o1 = q1.remove(3);
+        assert_eq!(o1, Ok('d'));
+        let o2 = q1.remove(2);
+        assert_eq!(o2, Ok('c'));
+        let o3 = q1.remove(1);
+        assert_eq!(o3, Ok('b'));
+        let o4 = q1.remove(0);
+        assert_eq!(o4, Ok('a'));
+        let o5 = q1.remove(0);
+        assert_eq!(o5, Err(Error::IndexOutOfBounds(0)));
+
+        let q2 = ArrayDeque {
+            array: CircularVec::new(vec!['a', 'b'], 0),
+            len: 0,
+        };
+        assert_eq!(q1, q2);
+    }
+
+    #[test]
+    fn remove_from_front() {
+        let mut q1: ArrayDeque<char> = ArrayDeque {
+            array: CircularVec::new(vec!['c', 'd', 'a', 'b'], 2),
+            len: 4,
+        };
+        let o1 = q1.remove(0);
+        assert_eq!(o1, Ok('a'));
+        let o2 = q1.remove(0);
+        assert_eq!(o2, Ok('b'));
+        let o3 = q1.remove(0);
+        assert_eq!(o3, Ok('c'));
+        let o4 = q1.remove(0);
+        assert_eq!(o4, Ok('d'));
+        let o5 = q1.remove(0);
+        assert_eq!(o5, Err(Error::IndexOutOfBounds(0)));
+
+        let q2 = ArrayDeque {
+            array: CircularVec::new(vec!['d', 'a'], 0),
             len: 0,
         };
         assert_eq!(q1, q2);
