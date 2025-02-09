@@ -45,6 +45,19 @@ impl ChainedHashTable {
         }
     }
 
+    pub fn resize(self, dim: u32) -> Self {
+        assert!(self.len() <= 2usize.pow(dim), "self.len() > 2^dim");
+        let mut other = Self::initialize(dim);
+
+        for row in self.table {
+            for x in row {
+                let i = other.hash(x);
+                other.table[i].push(x);
+            }
+        }
+        other
+    }
+
     pub fn hash(&self, x: u64) -> usize {
         let y = self.odd.overflowing_mul(x).0 >> (u64::BITS - self.dim);
         y.try_into().expect("Unable to cast x's type into usize")
