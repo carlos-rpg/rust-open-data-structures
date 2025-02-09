@@ -19,6 +19,11 @@ impl ChainedHashTable {
     pub fn len(&self) -> usize {
         self.len
     }
+
+    pub fn hash(&self, x: u64) -> usize {
+        let y = self.odd.overflowing_mul(x).0 >> (u64::BITS - self.dim);
+        y.try_into().expect("Unable to cast x's type into usize")
+    }
 }
 
 #[cfg(test)]
