@@ -68,6 +68,10 @@ impl ChainedHashTable {
 mod tests {
     use super::*;
 
+    fn cht(dim: u32, table: Vec<Vec<u32>>, odd: u32, len: usize) -> ChainedHashTable {
+        ChainedHashTable { dim, table, odd, len }
+    }
+
     #[test]
     fn initialize() {
         let chs1 = ChainedHashTable::initialize(1);
@@ -87,5 +91,23 @@ mod tests {
     #[should_panic]
     fn initialize_wrong_dim() {
         let _chs = ChainedHashTable::initialize(0);
+    }
+
+    #[test]
+    fn hash() {
+        let cht1 = cht(1, vec![], 2579419223, 0);
+        assert_eq!(cht1.hash(790641268), 1);
+        assert_eq!(cht1.hash(2204740408), 0);
+        assert_eq!(cht1.hash(3442113750), 1);
+
+        let cht2 = cht(16, vec![], 1881984275, 0);
+        assert_eq!(cht2.hash(3783082547), 47890);
+        assert_eq!(cht2.hash(103666855), 50532);
+        assert_eq!(cht2.hash(2941348170), 44307);
+
+        let cht3 = cht(32, vec![], 694784213, 0);
+        assert_eq!(cht3.hash(3066815969), 457036853);
+        assert_eq!(cht3.hash(59612175), 96618619);
+        assert_eq!(cht3.hash(3151035214), 1664808934);
     }
 }
