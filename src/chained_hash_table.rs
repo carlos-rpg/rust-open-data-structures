@@ -2,8 +2,8 @@ use rand::random_range;
 
 pub struct ChainedHashTable {
     dim: u32,
-    table: Vec<Vec<u64>>,
-    odd: u64,
+    table: Vec<Vec<u32>>,
+    odd: u32,
     len: usize
 }
 
@@ -17,7 +17,7 @@ impl ChainedHashTable {
         assert!(dim > 0, "ChainedHashTable dimension must be greater than 0");
         let table_len = 2usize.pow(dim);
         let table = vec![vec![]; table_len];
-        let odd = 2 * random_range(0..u64::MAX / 2) + 1;
+        let odd = 2 * random_range(u32::MIN..u32::MAX / 2) + 1;
         Self { dim, table, odd, len: 0 }
     }
 
@@ -25,12 +25,12 @@ impl ChainedHashTable {
         self.len
     }
 
-    pub fn find(&self, x: u64) -> Option<u64> {
+    pub fn find(&self, x: u32) -> Option<u32> {
         let row = &self.table[self.hash(x)];
         row.iter().find(|&y| *y == x).copied()
     }
 
-    pub fn add(&mut self, x: u64) -> Result<(), Error> {
+    pub fn add(&mut self, x: u32) -> Result<(), Error> {
         if self.len() >= self.table.len() {
             Err(Error::TableIsFull)
         }
@@ -58,8 +58,8 @@ impl ChainedHashTable {
         other
     }
 
-    pub fn hash(&self, x: u64) -> usize {
-        let y = self.odd.overflowing_mul(x).0 >> (u64::BITS - self.dim);
+    pub fn hash(&self, x: u32) -> usize {
+        let y = self.odd.overflowing_mul(x).0 >> (u32::BITS - self.dim);
         y.try_into().expect("Unable to cast x's type into usize")
     }
 }
