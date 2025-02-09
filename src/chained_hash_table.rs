@@ -7,6 +7,11 @@ pub struct ChainedHashTable {
     len: usize
 }
 
+pub enum Error {
+    KeyAlreadyExists,
+    TableIsFull,
+}
+
 impl ChainedHashTable {
     pub fn initialize(dim: u32) -> Self {
         assert!(dim > 0, "ChainedHashTable dimension must be greater than 0");
@@ -23,6 +28,21 @@ impl ChainedHashTable {
     pub fn find(&self, x: u64) -> Option<u64> {
         let row = &self.table[self.hash(x)];
         row.iter().find(|&y| *y == x).copied()
+    }
+
+    pub fn add(&mut self, x: u64) -> Result<(), Error> {
+        if self.len() >= self.table.len() {
+            Err(Error::TableIsFull)
+        }
+        else if !self.find(x).is_none() {
+            Err(Error::KeyAlreadyExists)
+        }
+        else {
+            let i = self.hash(x);
+            self.table[i].push(x);
+            self.len += 1;
+            Ok(())
+        }
     }
 
     pub fn hash(&self, x: u64) -> usize {
