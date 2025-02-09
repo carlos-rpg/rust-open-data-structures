@@ -20,6 +20,11 @@ impl ChainedHashTable {
         self.len
     }
 
+    pub fn find(&self, x: u64) -> Option<u64> {
+        let row = &self.table[self.hash(x)];
+        row.iter().find(|&y| *y == x).copied()
+    }
+
     pub fn hash(&self, x: u64) -> usize {
         let y = self.odd.overflowing_mul(x).0 >> (u64::BITS - self.dim);
         y.try_into().expect("Unable to cast x's type into usize")
