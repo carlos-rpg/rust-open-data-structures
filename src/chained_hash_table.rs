@@ -26,9 +26,9 @@ impl ChainedHashTable {
         self.len
     }
 
-    pub fn find(&self, x: u32) -> Option<u32> {
+    pub fn contains(&self, x: u32) -> bool {
         let row = &self.table[self.hash(x)];
-        row.iter().find(|&y| *y == x).copied()
+        row.iter().any(|y| *y == x)
     }
 
     pub fn add(&mut self, x: u32) -> Result<(), Error> {
@@ -109,5 +109,24 @@ mod tests {
         assert_eq!(cht3.hash(3066815969), 457036853);
         assert_eq!(cht3.hash(59612175), 96618619);
         assert_eq!(cht3.hash(3151035214), 1664808934);
+    }
+
+    #[test]
+    fn contains() {
+        let cht1 = cht(
+            2, 
+            vec![
+                vec![3618622750],
+                vec![2688180142, 3783518487],
+                vec![],
+                vec![3826048670],
+            ],
+            49460819,
+            4,
+        );
+        assert!(cht1.contains(3618622750));
+        assert!(cht1.contains(3783518487));
+        assert!(cht1.contains(3826048670));
+        assert!(!cht1.contains(42))
     }
 }
