@@ -1,4 +1,5 @@
 use rand::random_range;
+use std::mem::swap;
 
 pub struct ChainedHashTable {
     dim: u32,
@@ -45,17 +46,16 @@ impl ChainedHashTable {
         }
     }
 
-    pub fn resize(self, dim: u32) -> Self {
-        assert!(self.len() <= 2usize.pow(dim), "self.len() > 2^dim");
+    fn resize(&mut self, dim: u32) {
         let mut other = Self::initialize(dim);
+        swap(self, &mut other);
 
-        for row in self.table {
+        for row in other.table {
             for x in row {
-                let i = other.hash(x);
-                other.table[i].push(x);
+                let i = self.hash(x);
+                self.table[i].push(x);
             }
         }
-        other
     }
 
     pub fn hash(&self, x: u32) -> usize {
