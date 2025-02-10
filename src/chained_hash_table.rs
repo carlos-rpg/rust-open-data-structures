@@ -1,6 +1,7 @@
 use rand::random_range;
 use std::mem::swap;
 
+#[derive(Debug)]
 pub struct ChainedHashTable {
     dim: u32,
     table: Vec<Vec<u32>>,
@@ -63,6 +64,23 @@ impl ChainedHashTable {
         y.try_into().expect("Unable to cast x's type into usize")
     }
 }
+
+impl PartialEq for ChainedHashTable {
+    fn eq(&self, other: &Self) -> bool {
+        if self.len() != other.len() {
+            return false;
+        }
+        for row in &self.table {
+            for x in row {
+                if !other.contains(*x) {
+                    return false;
+                }
+            }
+        }
+        true
+    }
+}
+
 
 #[cfg(test)]
 mod tests {
@@ -128,5 +146,66 @@ mod tests {
         assert!(cht1.contains(3783518487));
         assert!(cht1.contains(3826048670));
         assert!(!cht1.contains(42))
+    }
+
+    #[test]
+    fn partial_eq_same_len() {
+        let cht1 = ChainedHashTable {
+            dim: 1, 
+            table: vec![
+                vec![2450321026],
+                vec![1985059619, 2014097083, 3473442836],
+            ],
+            odd: 1059656881,
+            len: 4,
+        };
+        let cht2 = ChainedHashTable {
+            dim: 2, 
+            table: vec![
+                vec![1985059619],
+                vec![2450321026, 2014097083],
+                vec![3473442836],
+                vec![],
+            ],
+            odd: 3366355585,
+            len: 4,
+        };
+        let cht3 = ChainedHashTable {
+            dim: 1, 
+            table: vec![
+                vec![0],
+                vec![2450321026, 1985059619, 3473442836],
+            ],
+            odd: 949054937,
+            len: 4,
+        };
+        assert_eq!(cht1, cht2);
+        assert_ne!(cht1, cht3);
+        assert_ne!(cht2, cht3);
+    }
+
+    #[test]
+    fn partial_eq_different_len() {
+        let cht1 = ChainedHashTable {
+            dim: 1, 
+            table: vec![
+                vec![2450321026],
+                vec![1985059619, 2014097083],
+            ],
+            odd: 1059656881,
+            len: 3,
+        };
+        let cht2 = ChainedHashTable {
+            dim: 2, 
+            table: vec![
+                vec![1985059619],
+                vec![2450321026, 2014097083],
+                vec![3473442836],
+                vec![],
+            ],
+            odd: 3366355585,
+            len: 4,
+        };
+        assert_ne!(cht1, cht2);
     }
 }
