@@ -55,6 +55,7 @@ impl ChainedHashTable {
             for x in row {
                 let i = self.hash(x);
                 self.table[i].push(x);
+                self.len += 1;
             }
         }
     }
