@@ -9,9 +9,9 @@ pub struct ChainedHashTable {
     len: usize
 }
 
+#[derive(Debug, PartialEq)]
 pub enum Error {
     KeyAlreadyExists,
-    TableIsFull,
 }
 
 impl ChainedHashTable {
@@ -27,19 +27,24 @@ impl ChainedHashTable {
         self.len
     }
 
+    pub fn hash(&self, x: u32) -> usize {
+        let y = self.odd.overflowing_mul(x).0 >> (u32::BITS - self.dim);
+        y.try_into().expect("Unable to cast x's type into usize")
+    }
+
     pub fn contains(&self, x: u32) -> bool {
         let row = &self.table[self.hash(x)];
         row.iter().any(|y| *y == x)
     }
 
     pub fn add(&mut self, x: u32) -> Result<(), Error> {
-        if self.len() >= self.table.len() {
-            Err(Error::TableIsFull)
-        }
-        else if !self.find(x).is_none() {
+        if self.contains(x) {
             Err(Error::KeyAlreadyExists)
         }
         else {
+            if !self.size_invarian_holds() {
+                self.resize(self.dim + 1);
+            }
             let i = self.hash(x);
             self.table[i].push(x);
             self.len += 1;
@@ -60,9 +65,8 @@ impl ChainedHashTable {
         }
     }
 
-    pub fn hash(&self, x: u32) -> usize {
-        let y = self.odd.overflowing_mul(x).0 >> (u32::BITS - self.dim);
-        y.try_into().expect("Unable to cast x's type into usize")
+    fn size_invarian_holds(&self) -> bool {
+        self.len() <= self.table.len()
     }
 }
 
@@ -234,6 +238,38 @@ mod tests {
         cht2.resize(2);
         assert_eq!(cht1, cht2);
         cht2.resize(1);
+        assert_eq!(cht1, cht2);
+    }
+
+    #[test]
+    fn add() {
+        let mut cht1 = ChainedHashTable {
+            dim: 2,
+            table: vec![vec![]; 4],
+            odd: 2799304215,
+            len: 0,
+        };
+        let out1 = cht1.add(42);
+        let out2 = cht1.add(101);
+        let out3 = cht1.add(0);
+        let out4 = cht1.add(58008);
+        let out5 = cht1.add(0);
+
+        assert_eq!(out1, Ok(()));
+        assert_eq!(out2, Ok(()));
+        assert_eq!(out3, Ok(()));
+        assert_eq!(out4, Ok(()));
+        assert_eq!(out5, Err(Error::KeyAlreadyExists));
+
+        let cht2 = ChainedHashTable {
+            dim: 1,
+            table: vec![
+                vec![42, 101, 0, 58008],
+                vec![],
+            ],
+            odd: 1,
+            len: 4,
+        };
         assert_eq!(cht1, cht2);
     }
 }
