@@ -1,7 +1,7 @@
 use rand::random_range;
 use std::mem::swap;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct ChainedHashTable {
     dim: u32,
     table: Vec<Vec<u32>>,
@@ -207,5 +207,32 @@ mod tests {
             len: 4,
         };
         assert_ne!(cht1, cht2);
+    }
+
+    #[test]
+    fn resize() {
+        let cht1 = ChainedHashTable {
+            dim: 1, 
+            table: vec![
+                vec![425364276, 3151484320, 4161335175, 3053504173, 1496293961],
+                vec![3199143396, 3057340300, 3235619151],
+            ],
+            odd: 1610605069,
+            len: 8,
+        };
+        let mut cht2 = cht1.clone();
+
+        cht2.resize(2);
+        assert_eq!(cht1, cht2);
+        cht2.resize(3);
+        assert_eq!(cht1, cht2);
+        cht2.resize(4);
+        assert_eq!(cht1, cht2);
+        cht2.resize(3);
+        assert_eq!(cht1, cht2);
+        cht2.resize(2);
+        assert_eq!(cht1, cht2);
+        cht2.resize(1);
+        assert_eq!(cht1, cht2);
     }
 }
