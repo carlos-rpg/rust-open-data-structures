@@ -1,5 +1,5 @@
-use rand::random_range;
-use std::mem::swap;
+use rand;
+use std::mem;
 
 #[derive(Debug, Clone)]
 pub struct ChainedHashTable {
@@ -20,7 +20,7 @@ impl ChainedHashTable {
         assert!(dim > 0, "ChainedHashTable dimension must be greater than 0");
         let table_len = 2usize.pow(dim);
         let table = vec![vec![]; table_len];
-        let odd = 2 * random_range(u32::MIN..u32::MAX / 2) + 1;
+        let odd = 2 * rand::random_range(u32::MIN..u32::MAX / 2) + 1;
         Self { dim, table, odd, len: 0 }
     }
 
@@ -71,7 +71,7 @@ impl ChainedHashTable {
 
     fn resize(&mut self, dim: u32) {
         let mut other = Self::initialize(dim);
-        swap(self, &mut other);
+        mem::swap(self, &mut other);
 
         for row in other.table {
             for x in row {
