@@ -93,17 +93,11 @@ impl ChainedHashTable {
 
 impl PartialEq for ChainedHashTable {
     fn eq(&self, other: &Self) -> bool {
-        if self.len() != other.len() {
-            return false;
-        }
-        for row in &self.table {
-            for x in row {
-                if !other.contains(*x) {
-                    return false;
-                }
-            }
-        }
-        true
+        let is_in_other = |row: &Vec<u32>| row
+            .iter()
+            .all(|x| other.contains(*x));
+
+        self.len() == other.len() && self.table.iter().all(is_in_other)
     }
 }
 
