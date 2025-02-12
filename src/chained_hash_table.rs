@@ -12,6 +12,7 @@ pub struct ChainedHashTable {
 #[derive(Debug, PartialEq)]
 pub enum Error {
     KeyAlreadyExists,
+    KeyNotFound,
 }
 
 impl ChainedHashTable {
@@ -52,6 +53,22 @@ impl ChainedHashTable {
         }
     }
 
+    pub fn remove(&mut self, x: u32) -> Result<(), Error> {
+        let i = self.hash(x);
+
+        let j = self.table[i].iter()
+            .position(|y| *y == x)
+            .ok_or(Error::KeyNotFound)?;
+
+        self.table[i].remove(j);
+        self.len -= 1;
+
+        if self.table_is_very_long() {
+            self.resize(self.dim - 1);
+        }
+        Ok(())
+    }
+
     fn resize(&mut self, dim: u32) {
         let mut other = Self::initialize(dim);
         swap(self, &mut other);
@@ -67,6 +84,10 @@ impl ChainedHashTable {
 
     fn size_invarian_holds(&self) -> bool {
         self.len() <= self.table.len()
+    }
+
+    fn table_is_very_long(&self) -> bool {
+        self.dim > 1 && self.len() * 3 < self.table.len()
     }
 }
 
@@ -269,6 +290,38 @@ mod tests {
             ],
             odd: 1,
             len: 4,
+        };
+        assert_eq!(cht1, cht2);
+    }
+
+    #[test]
+    fn remove() {
+        let mut cht1 = ChainedHashTable {
+            dim: 2,
+            table: vec![
+                vec![],
+                vec![1671459500],
+                vec![2712514241, 2618448044],
+                vec![2291933903],
+            ],
+            odd: 237597269,
+            len: 4,
+        };
+        let out1 = cht1.remove(1671459500);
+        assert_eq!(out1, Ok(()));
+        let out2 = cht1.remove(1671459500);
+        assert_eq!(out2, Err(Error::KeyNotFound));
+        let out3 = cht1.remove(2712514241);
+        assert_eq!(out3, Ok(()));
+
+        let cht2 = ChainedHashTable {
+            dim: 1,
+            table: vec![
+                vec![2618448044],
+                vec![2291933903],
+            ],
+            odd: 3296597657,
+            len: 2,
         };
         assert_eq!(cht1, cht2);
     }
