@@ -35,7 +35,7 @@ impl hash::Hasher for Multiplicative {
 
 
 #[cfg(test)]
-mod tests {
+mod tests_multiplicative {
     use std::hash::{Hash, Hasher};
     use super::*;
 
@@ -59,13 +59,13 @@ mod tests {
 
     #[test]
     #[should_panic]
-    fn multiplicative_new_low_dim() {
+    fn new_low_dim() {
         let _h = Multiplicative::new(0);
     }
 
     #[test]
     #[should_panic]
-    fn multiplicative_new_high_dim() {
+    fn new_high_dim() {
         let _h = Multiplicative::new(65);
     }
 
