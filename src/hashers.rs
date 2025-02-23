@@ -70,24 +70,6 @@ mod tests {
     }
 
     #[test]
-    fn multiplicative_reproducible() {
-        let mut h1 = Multiplicative::new(1);
-        assert_eq!(0.hash(&mut h1), 0.hash(&mut h1));
-        assert_eq!(42.hash(&mut h1), 42.hash(&mut h1));
-        assert_eq!(1234567890.hash(&mut h1), 1234567890.hash(&mut h1));
-
-        let mut h2 = Multiplicative::new(32);
-        assert_eq!(0.hash(&mut h2), 0.hash(&mut h2));
-        assert_eq!(42.hash(&mut h2), 42.hash(&mut h2));
-        assert_eq!(1234567890.hash(&mut h2), 1234567890.hash(&mut h2));
-
-        let mut h3 = Multiplicative::new(32);
-        assert_eq!(0.hash(&mut h3), 0.hash(&mut h3));
-        assert_eq!(42.hash(&mut h3), 42.hash(&mut h3));
-        assert_eq!(1234567890.hash(&mut h3), 1234567890.hash(&mut h3));
-    }
-
-    #[test]
     fn hash_values() {
         let mut h1 = Multiplicative {
             state: 0,
