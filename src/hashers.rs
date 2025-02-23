@@ -5,15 +5,18 @@ pub trait DimHasher {
     fn hash(&self, x: u64, dim: u32) -> u64;
 }
 
+#[derive(Debug, Clone)]
 pub struct Multiplicative {
     odd: u64,
 }
 
 impl Multiplicative {
     pub fn new() -> Self {
-        Multiplicative { 
-            odd: 2 * rand::random_range(u64::MIN..u64::MAX / 2) + 1
-        }
+        Self { odd: 2 * rand::random_range(u64::MIN..u64::MAX / 2) + 1 }
+    }
+
+    pub fn try_new(odd: u64) -> Option<Self> {
+        if odd % 2 == 1 { Some(Self { odd }) } else { None }
     }
 }
 
@@ -39,6 +42,18 @@ mod tests_multiplicative {
 
         let h3 = Multiplicative::new();
         assert!(h3.odd % 2 == 1);
+    }
+
+    #[test]
+    fn try_new() {
+        let h1 = Multiplicative::try_new(13);
+        assert!(h1.is_some());
+
+        let h2 = Multiplicative::try_new(2);
+        assert!(h2.is_none());
+
+        let h3 = Multiplicative::try_new(511);
+        assert!(h3.is_some());
     }
 
     #[test]
