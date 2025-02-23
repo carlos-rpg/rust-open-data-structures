@@ -26,7 +26,7 @@ impl hash::Hasher for Multiplicative {
     fn write(&mut self, bytes: &[u8]) {
         let x = bytes.iter()
             .enumerate()
-            .map(|(i, &byte)| byte as u64 * 2u64.pow(i as u32))
+            .map(|(i, &byte)| (byte as u64) << i * 8)
             .sum::<u64>();
 
         self.state = self.odd.overflowing_mul(x).0 >> (u64::BITS - self.dim);
