@@ -1,4 +1,4 @@
-use rand;
+use rand::{Rng, SeedableRng};
 
 
 pub trait DimHasher {
@@ -11,18 +11,17 @@ pub struct Multiplicative {
 }
 
 impl Multiplicative {
-    pub fn new() -> Self {
-        Self { odd: 2 * rand::random_range(u64::MIN..u64::MAX / 2) + 1 }
-    }
-
-    pub fn try_new(odd: u64) -> Option<Self> {
-        if odd % 2 == 1 { Some(Self { odd }) } else { None }
+    pub fn new(seed: Option<u64>) -> Self {
+        let mut rng = match seed {
+            None => rand_pcg::Pcg64Mcg::from_os_rng(),
+            Some(value) => rand_pcg::Pcg64Mcg::seed_from_u64(value)
+        };
+        Self { odd: 2 * rng.random_range(u64::MIN..u64::MAX / 2) + 1 }
     }
 }
 
 impl DimHasher for Multiplicative {
     fn hash(&self, x: u64, dim: u32) -> u64 {
-        assert!(dim > 0 && dim <= u64::BITS, "dim == 0 || dim > u64::BITS");
         self.odd.overflowing_mul(x).0 >> (u64::BITS - dim)
     }
 }
@@ -34,26 +33,14 @@ mod tests_multiplicative {
 
     #[test]
     fn new() {
-        let h1 = Multiplicative::new();
+        let h1 = Multiplicative::new(None);
         assert!(h1.odd % 2 == 1);
 
-        let h2 = Multiplicative::new();
+        let h2 = Multiplicative::new(None);
         assert!(h2.odd % 2 == 1);
 
-        let h3 = Multiplicative::new();
+        let h3 = Multiplicative::new(Some(42));
         assert!(h3.odd % 2 == 1);
-    }
-
-    #[test]
-    fn try_new() {
-        let h1 = Multiplicative::try_new(13);
-        assert!(h1.is_some());
-
-        let h2 = Multiplicative::try_new(2);
-        assert!(h2.is_none());
-
-        let h3 = Multiplicative::try_new(511);
-        assert!(h3.is_some());
     }
 
     #[test]
