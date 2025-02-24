@@ -14,7 +14,7 @@ impl Multiplicative {
     pub fn new(seed: Option<u64>) -> Self {
         let mut rng = match seed {
             None => rand_pcg::Pcg64Mcg::from_os_rng(),
-            Some(value) => rand_pcg::Pcg64Mcg::seed_from_u64(value)
+            Some(value) => rand_pcg::Pcg64Mcg::seed_from_u64(value),
         };
         Self { odd: 2 * rng.random_range(u64::MIN..u64::MAX / 2) + 1 }
     }
