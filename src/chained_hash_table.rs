@@ -1,5 +1,6 @@
 use std::mem;
-use crate::hashers::DimHasher;
+use crate::hashers::{self, DimHasher};
+
 
 #[derive(Debug, Clone)]
 pub struct ChainedHashTable<H: DimHasher> {
@@ -106,7 +107,6 @@ impl<H: DimHasher> PartialEq for ChainedHashTable<H> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::hashers;
 
     #[test]
     fn initialize() {
