@@ -19,8 +19,7 @@ pub enum Error {
 impl<H: DimHasher> ChainedHashTable<H> {
     pub fn initialize(dim: u32, hasher: H) -> Self {
         assert!(dim > 0, "ChainedHashTable dimension must be greater than 0");
-        let table_len = 2usize.pow(dim);
-        let table = vec![vec![]; table_len];
+        let table = Self::new_table(dim);
         Self { dim, table, hasher, len: 0 }
     }
 
@@ -72,8 +71,7 @@ impl<H: DimHasher> ChainedHashTable<H> {
 
     fn resize(&mut self, to_dim: u32) {
         self.dim = to_dim;
-        let table_len = 2usize.pow(to_dim);
-        let mut table = vec![vec![]; table_len];
+        let mut table = Self::new_table(to_dim);
         mem::swap(&mut self.table, &mut table);
 
         for row in table {
@@ -82,6 +80,10 @@ impl<H: DimHasher> ChainedHashTable<H> {
                 self.table[i].push(x);
             }
         }
+    }
+
+    fn new_table(dim: u32) -> Vec<Vec<u64>> {
+        vec![vec![]; 2usize.pow(dim)]
     }
 
     fn size_invarian_holds(&self) -> bool {
