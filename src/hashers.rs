@@ -1,5 +1,5 @@
 use rand::{Rng, SeedableRng};
-use rand_pcg::Mcg128Xsl64;
+use rand_pcg::Pcg64Mcg;
 
 
 pub trait DimHasher {
@@ -13,16 +13,16 @@ pub struct Multiplicative {
 
 impl Multiplicative {
     pub fn new() -> Self {
-        let rng = rand_pcg::Pcg64Mcg::from_os_rng();
+        let rng = Pcg64Mcg::from_os_rng();
         Self { z: Self::odd_random_range(rng) }
     }
 
     pub fn with_seed(state: u64) -> Self {
-        let rng = rand_pcg::Pcg64Mcg::seed_from_u64(state);
+        let rng = Pcg64Mcg::seed_from_u64(state);
         Self { z: Self::odd_random_range(rng) }
     }
 
-    fn odd_random_range(mut rng: Mcg128Xsl64) -> u64 {
+    fn odd_random_range(mut rng: Pcg64Mcg) -> u64 {
         2 * rng.random_range(u64::MIN..u64::MAX / 2) + 1
     }
 }
