@@ -61,7 +61,15 @@ impl Tabulation {
             .checked_pow(r)
             .expect("2^r can't fit in usize");
 
-        vec![vec![rng.random_range(u64::MIN..u64::MAX); n_cols]; n_rows]
+        let mut tab = Vec::with_capacity(n_rows);
+        for _ in 0..n_rows {
+            let mut row = Vec::with_capacity(n_cols);
+            for _ in 0..n_cols {
+                row.push(rng.random_range(u64::MIN..u64::MAX));
+            }
+            tab.push(row);
+        }
+        tab
     }
 
     fn get(&self, i: usize, x: u64) -> u64 {
