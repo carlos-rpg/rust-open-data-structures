@@ -65,7 +65,7 @@ impl Tabulation {
     }
 
     fn get(&self, i: usize, x: u64) -> u64 {
-        let j = x >> i as u32 * self.r & u64::MAX;
+        let j = x >> i as u32 * self.r & u64::MAX >> u64::BITS - self.r;
         self.tab[i][j as usize]
     }
 }
