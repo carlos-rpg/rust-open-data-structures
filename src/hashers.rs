@@ -34,6 +34,53 @@ impl DimHasher for Multiplicative {
 }
 
 
+pub struct Tabulation {
+    r: u32,
+    tab: Vec<Vec<u64>>,
+}
+
+impl Tabulation {
+    pub fn new(r: u32) -> Self {
+        let rng = Pcg64Mcg::from_os_rng();
+        Self { r, tab: Self::make_tab(r, rng) }
+    }
+
+    pub fn with_seed(r: u32, state: u64) -> Self {
+        let rng = Pcg64Mcg::seed_from_u64(state);
+        Self { r, tab: Self::make_tab(r, rng) }
+    }
+
+    fn make_tab(r: u32, mut rng: Pcg64Mcg) -> Vec<Vec<u64>> {
+        assert!(r.is_power_of_two(), "r is not power of 2");
+
+        let n_rows = (u64::BITS / r)
+            .try_into()
+            .expect("Unable to cast u32 into usize");
+
+        let n_cols = 2usize
+            .checked_pow(r)
+            .expect("2^r can't fit in usize");
+
+        vec![vec![rng.random_range(u64::MIN..u64::MAX); n_cols]; n_rows]
+    }
+
+    fn get(&self, i: usize, x: u64) -> u64 {
+        let j = x >> i as u32 * self.r & u64::MAX;
+        self.tab[i][j as usize]
+    }
+}
+
+impl DimHasher for Tabulation {
+    fn hash(&self, x: u64, dim: u32) -> u64 {
+        let tabs = (0..self.tab.len())
+            .map(|i| self.get(i, x))
+            .fold(0, |acc, t| acc ^ t);
+
+        tabs >> (u64::BITS - dim)
+    }
+}
+
+
 #[cfg(test)]
 mod tests_multiplicative {
     use super::*;
