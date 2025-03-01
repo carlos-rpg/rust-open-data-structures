@@ -149,3 +149,42 @@ mod tests_multiplicative {
         let _ = h.hash(42, 65);
     }
 }
+
+
+#[cfg(test)]
+mod test_tabulation {
+    use super::*;
+
+    #[test]
+    fn new() {
+        let _t1 = Tabulation::new(1);
+        let _t2 = Tabulation::new(4);
+        let _t3 = Tabulation::new(16);
+    }
+
+    #[test]
+    #[should_panic]
+    fn new_invalid_r() {
+        let _t1 = Tabulation::new(0);
+    }
+
+    #[test]
+    fn with_seed() {
+        let _t1 = Tabulation::with_seed(1, u64::MIN);
+        let _t2 = Tabulation::with_seed(4, 101);
+        let _t3 = Tabulation::with_seed(16, u64::MAX);
+    }
+
+    #[test]
+    fn hash() {
+        let t1 = Tabulation::new(1);
+        assert_eq!(t1.hash(u64::MIN, 1), t1.hash(u64::MIN, 1));
+        assert_eq!(t1.hash(11, 32), t1.hash(11, 32));
+        assert_eq!(t1.hash(u64::MAX, 64), t1.hash(u64::MAX, 64));
+
+        let t3 = Tabulation::new(16);
+        assert_eq!(t3.hash(u64::MIN, 1), t3.hash(u64::MIN, 1));
+        assert_eq!(t3.hash(151, 32), t3.hash(151, 32));
+        assert_eq!(t3.hash(u64::MAX, 64), t3.hash(u64::MAX, 64));
+    }
+}
