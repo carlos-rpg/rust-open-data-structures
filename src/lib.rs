@@ -6,3 +6,4 @@ pub mod array_deque;
 
 pub mod hashers;
 pub mod chained_hash_table;
+pub mod linear_hash_table;
