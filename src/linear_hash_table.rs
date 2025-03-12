@@ -9,6 +9,13 @@ pub struct LinearHashTable<H: DimHasher> {
     hasher: H,
 }
 
+#[derive(Clone, PartialEq)]
+enum Entry<T> {
+    Val(T),
+    Nil,
+    Del,
+}
+
 impl<H: DimHasher> LinearHashTable<H> {
     pub fn initialize(hasher: H) -> Self {
         let table = vec![Entry::Nil; 2];
@@ -22,6 +29,20 @@ impl<H: DimHasher> LinearHashTable<H> {
 
     pub fn len(&self) -> usize {
         self.len
+    }
+
+    pub fn contains(&self, x: u64) -> bool {
+        let mut i = self.hash(x);
+        let mut y = &self.table[i];
+
+        while !y.is_nil() {
+            if !y.is_del() && y.is_val(x) {
+                return true;
+            }
+            i = (i + 1) % self.table.len();
+            y = &self.table[i];
+        }
+        false
     }
 
 }
