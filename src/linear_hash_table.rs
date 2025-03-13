@@ -31,6 +31,11 @@ impl<T: PartialEq> Entry<T> {
     }
 }
 
+#[derive(Debug, PartialEq)]
+pub enum Error {
+    KeyAlreadyExists,
+}
+
 impl<H: DimHasher> LinearHashTable<H> {
     pub fn initialize(hasher: H) -> Self {
         Self { dim: 1, table: Self::new_table(1), q: 0, len: 0, hasher }
@@ -64,6 +69,30 @@ impl<H: DimHasher> LinearHashTable<H> {
         false
     }
 
+    pub fn add(&mut self, x: u64) -> Result<(), Error> {
+        if self.contains(x) {
+            Err(Error::KeyAlreadyExists)
+        }
+        else {
+            if !self.grow_invariant_holds() {
+                self.resize();
+            }
+            let mut i = self.hash(x);
+            let mut y = &mut self.table[i];
+
+            while !y.is_nil() && !y.is_del() {
+                i = (i + 1) % self.table.len();
+                y = &mut self.table[i];
+            }
+            if y.is_nil() {
+                self.q += 1;
+            }
+            self.len += 1;
+            *y = Entry::Val(x);
+            Ok(())
+        }
+    }
+
     fn resize(&mut self) {
         let mut new_dim = 1;
         while 2usize.pow(new_dim) < 3 * self.len() {
@@ -82,5 +111,9 @@ impl<H: DimHasher> LinearHashTable<H> {
                 self.table[i] = x;
             }
         }
+    }
+
+    fn grow_invariant_holds(&self) -> bool {
+        self.table.len() >= 2 * self.q
     }
 }
