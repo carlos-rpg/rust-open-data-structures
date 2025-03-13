@@ -34,6 +34,7 @@ impl<T: PartialEq> Entry<T> {
 #[derive(Debug, PartialEq)]
 pub enum Error {
     KeyAlreadyExists,
+    KeyNotFound,
 }
 
 impl<H: DimHasher> LinearHashTable<H> {
@@ -93,6 +94,25 @@ impl<H: DimHasher> LinearHashTable<H> {
         }
     }
 
+    pub fn remove(&mut self, x: u64) -> Result<(), Error> {
+        let mut i = self.hash(x);
+        loop {
+            match self.table[i] {
+                Entry::Val(y) => if y == x {
+                    self.table[i] = Entry::Del;
+                    self.len -= 1;
+                    if !self.shrink_invariant_holds() {
+                        self.resize();
+                    }
+                    return Ok(());
+                },
+                Entry::Nil => return Err(Error::KeyNotFound),
+                Entry::Del => (),
+            }
+            i = (i + 1) % self.table.len();
+        }
+    }
+
     fn resize(&mut self) {
         let mut new_dim = 1;
         while 2usize.pow(new_dim) < 3 * self.len() {
@@ -116,4 +136,9 @@ impl<H: DimHasher> LinearHashTable<H> {
     fn grow_invariant_holds(&self) -> bool {
         self.table.len() >= 2 * self.q
     }
+
+    fn shrink_invariant_holds(&self) -> bool {
+        self.table.len() <= 8 * self.len()
+    }
+
 }
