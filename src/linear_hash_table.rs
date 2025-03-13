@@ -63,4 +63,23 @@ impl<H: DimHasher> LinearHashTable<H> {
         false
     }
 
+    fn resize(&mut self) {
+        let mut new_dim = 1;
+        while 2usize.pow(new_dim) < 3 * self.len() {
+            new_dim += 1;
+        }
+        let mut table = Self::new_table(new_dim);
+        self.dim = new_dim;
+        mem::swap(&mut self.table, &mut table);
+
+        for x in table {
+            if let Entry::Val(y) = x {
+                let mut i = self.hash(y);
+                while !self.table[i].is_nil() {
+                    i = (i + 1) % self.table.len();
+                }
+                self.table[i] = x;
+            }
+        }
+    }
 }
