@@ -32,8 +32,12 @@ impl<T: PartialEq> Entry<T> {
 
 impl<H: DimHasher> LinearHashTable<H> {
     pub fn initialize(hasher: H) -> Self {
-        let table = vec![Entry::Nil; 2];
-        Self { dim: 1, table, q: 0, len: 0, hasher }
+        Self { dim: 1, table: Self::new_table(1), q: 0, len: 0, hasher }
+    }
+
+    fn new_table(dim: u32) -> Vec<Entry<u64>> {
+        assert!(dim > 0, "dim == 0");
+        vec![Entry::Nil; 2usize.pow(dim)]
     }
 
     pub fn hash(&self, x: u64) -> usize {
