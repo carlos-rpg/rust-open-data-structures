@@ -16,6 +16,20 @@ enum Entry<T> {
     Del,
 }
 
+impl<T: PartialEq> Entry<T> {
+    fn is_val(&self, x: T) -> bool {
+        Self::Val(x) == *self
+    }
+
+    fn is_nil(&self) -> bool {
+        Self::Nil == *self
+    }
+
+    fn is_del(&self) -> bool {
+        Self::Del == *self
+    }
+}
+
 impl<H: DimHasher> LinearHashTable<H> {
     pub fn initialize(hasher: H) -> Self {
         let table = vec![Entry::Nil; 2];
