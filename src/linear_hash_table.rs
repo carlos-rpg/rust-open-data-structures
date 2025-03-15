@@ -58,16 +58,14 @@ impl<H: DimHasher> LinearHashTable<H> {
 
     pub fn contains(&self, x: u64) -> bool {
         let mut i = self.hash(x);
-        let mut y = &self.table[i];
-
-        while !y.is_nil() {
-            if !y.is_del() && y.is_val(x) {
-                return true;
+        loop {
+            match &self.table[i] {
+                Entry::Val(y) => if *y == x { return true; },
+                Entry::Nil => return false,
+                Entry::Del => (),
             }
             i = (i + 1) % self.table.len();
-            y = &self.table[i];
         }
-        false
     }
 
     pub fn add(&mut self, x: u64) -> Result<(), Error> {
@@ -79,17 +77,14 @@ impl<H: DimHasher> LinearHashTable<H> {
                 self.resize();
             }
             let mut i = self.hash(x);
-            let mut y = &mut self.table[i];
-
-            while !y.is_nil() && !y.is_del() {
+            while let Entry::Val(_) = &self.table[i] {
                 i = (i + 1) % self.table.len();
-                y = &mut self.table[i];
             }
-            if y.is_nil() {
+            if let Entry::Nil = &self.table[i] {
                 self.q += 1;
             }
             self.len += 1;
-            *y = Entry::Val(x);
+            self.table[i] = Entry::Val(x);
             Ok(())
         }
     }
