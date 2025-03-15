@@ -17,20 +17,6 @@ enum Entry<T> {
     Del,
 }
 
-impl<T: PartialEq> Entry<T> {
-    fn is_val(&self, x: T) -> bool {
-        Self::Val(x) == *self
-    }
-
-    fn is_nil(&self) -> bool {
-        Self::Nil == *self
-    }
-
-    fn is_del(&self) -> bool {
-        Self::Del == *self
-    }
-}
-
 #[derive(Debug, PartialEq)]
 pub enum Error {
     KeyAlreadyExists,
@@ -64,7 +50,7 @@ impl<H: DimHasher> LinearHashTable<H> {
                 Entry::Nil => return false,
                 Entry::Del => (),
             }
-            i = (i + 1) % self.table.len();
+            i = self.loop_index(i + 1);
         }
     }
 
@@ -76,15 +62,11 @@ impl<H: DimHasher> LinearHashTable<H> {
             if !self.grow_invariant_holds() {
                 self.resize();
             }
-            let mut i = self.hash(x);
-            while let Entry::Val(_) = &self.table[i] {
-                i = (i + 1) % self.table.len();
-            }
-            if let Entry::Nil = &self.table[i] {
+            let former_entry = self.insert(x);
+            if let Entry::Nil = former_entry {
                 self.q += 1;
             }
             self.len += 1;
-            self.table[i] = Entry::Val(x);
             Ok(())
         }
     }
@@ -104,7 +86,7 @@ impl<H: DimHasher> LinearHashTable<H> {
                 Entry::Nil => return Err(Error::KeyNotFound),
                 Entry::Del => (),
             }
-            i = (i + 1) % self.table.len();
+            i = self.loop_index(i + 1);
         }
     }
 
@@ -119,11 +101,7 @@ impl<H: DimHasher> LinearHashTable<H> {
 
         for x in table {
             if let Entry::Val(y) = x {
-                let mut i = self.hash(y);
-                while !self.table[i].is_nil() {
-                    i = (i + 1) % self.table.len();
-                }
-                self.table[i] = x;
+                let _ = self.insert(y);
             }
         }
     }
@@ -136,4 +114,19 @@ impl<H: DimHasher> LinearHashTable<H> {
         self.table.len() <= 8 * self.len()
     }
 
+    fn insert(&mut self, x: u64) -> Entry<u64> {
+        let mut i = self.hash(x);
+        while let Entry::Val(_) = &self.table[i] {
+            i = self.loop_index(i + 1);
+        }
+        let entry = self.table[i].clone();
+        self.table[i] = Entry::Val(x);
+        entry
+    }
+
+    fn loop_index(&self, i: usize) -> usize {
+        i % self.table.len()
+    }
+
 }
+
