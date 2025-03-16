@@ -62,8 +62,7 @@ impl<H: DimHasher> LinearHashTable<H> {
             if !self.grow_invariant_holds() {
                 self.resize();
             }
-            let former_entry = self.insert(x);
-            if let Entry::Nil = former_entry {
+            if let Entry::Nil = self.insert(x) {
                 self.q += 1;
             }
             self.len += 1;
