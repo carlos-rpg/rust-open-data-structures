@@ -89,6 +89,10 @@ impl<H: DimHasher> LinearHashTable<H> {
         }
     }
 
+    pub fn iter(&self) -> LinearHashTableIterator<H> {
+        LinearHashTableIterator { ref_to: self, index: 0}
+    }
+
     fn resize(&mut self) {
         let mut new_dim = 1;
         while 2usize.pow(new_dim) < 3 * self.len() {
@@ -129,3 +133,20 @@ impl<H: DimHasher> LinearHashTable<H> {
 
 }
 
+pub struct LinearHashTableIterator<'a, H: DimHasher> {
+    ref_to: &'a LinearHashTable<H>,
+    index: usize,
+}
+
+impl<'a, H: DimHasher> Iterator for LinearHashTableIterator<'a, H> {
+    type Item = &'a u64;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        while self.index < self.ref_to.table.len() {
+            let entry = &self.ref_to.table[self.index];
+            self.index += 1;
+            if let Entry::Val(x) = entry { return Some(x); }
+        }
+        None
+    }
+}
