@@ -106,7 +106,7 @@ impl<H: DimHasher> LinearHashTable<H> {
     }
 
     fn grow_invariant_holds(&self) -> bool {
-        self.table.len() >= 2 * self.q
+        self.table.len() >= 2 * (self.q + 1)
     }
 
     fn shrink_invariant_holds(&self) -> bool {
