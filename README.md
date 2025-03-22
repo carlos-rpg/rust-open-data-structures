@@ -33,7 +33,7 @@ sacrifice clarity for performance.
 4. Skip lists
 5. Hash tables
 - ✔️ ChainedHashTable
-- ❌ LinearHashTable
+- ✔️ LinearHashTable
 6. Binary trees
 7. Random binary search trees
 8. Scapegoat trees
