@@ -150,3 +150,10 @@ impl<'a, H: DimHasher> Iterator for LinearHashTableIterator<'a, H> {
         None
     }
 }
+
+impl<H: DimHasher> PartialEq for LinearHashTable<H> {
+    fn eq(&self, other: &Self) -> bool {
+        self.len() == other.len() && self.iter().all(|x| other.contains(*x))
+    }
+}
+
