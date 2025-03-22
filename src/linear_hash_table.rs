@@ -2,6 +2,7 @@ use std::mem;
 use crate::hashers::DimHasher;
 
 
+#[derive(Debug)]
 pub struct LinearHashTable<H: DimHasher> {
     dim: u32,
     table: Vec<Entry<u64>>,
@@ -10,7 +11,7 @@ pub struct LinearHashTable<H: DimHasher> {
     hasher: H,
 }
 
-#[derive(Clone, PartialEq)]
+#[derive(Clone, PartialEq, Debug)]
 enum Entry<T> {
     Val(T),
     Nil,
@@ -157,3 +158,122 @@ impl<H: DimHasher> PartialEq for LinearHashTable<H> {
     }
 }
 
+
+#[cfg(test)]
+mod tests {
+    use crate::hashers;
+    use super::*;
+
+    #[test]
+    fn iter() {
+        let hasher = hashers::Multiplicative::new();
+
+        let lht1 = LinearHashTable { 
+            dim: 1, table: vec![Entry::Nil, Entry::Nil], q: 0, len: 0, hasher: hasher.clone()
+        };
+        assert_eq!(lht1.iter().collect::<Vec<&u64>>().len(), 0);
+
+        let lht2 = LinearHashTable { 
+            dim: 2, 
+            table: vec![Entry::Nil, Entry::Val(3), Entry::Nil, Entry::Val(14)], 
+            q: 2, 
+            len: 2, 
+            hasher: hasher.clone()
+        };
+        assert_eq!(lht2.iter().collect::<Vec<&u64>>(), vec![&3, &14]);
+
+        let lht3 = LinearHashTable { 
+            dim: 2,
+            table: vec![Entry::Nil, Entry::Val(3), Entry::Del, Entry::Val(14)], 
+            q: 3, 
+            len: 2, 
+            hasher: hasher.clone()
+        };
+        assert_eq!(lht3.iter().collect::<Vec<&u64>>(), vec![&3, &14]);
+    }
+
+    #[test]
+    fn partial_eq() {
+        let lhs1 = LinearHashTable { 
+            dim: 3,
+            table: vec![
+                Entry::Val(0), Entry::Nil, Entry::Val(18446744073709551615), Entry::Nil,
+                Entry::Nil, Entry::Nil, Entry::Nil, Entry::Val(1234567890),
+            ],
+            q: 3,
+            len: 3,
+            hasher: hashers::Multiplicative::with_seed(105),
+        };
+        let lhs2 = LinearHashTable { 
+            dim: 3,
+            table: vec![
+                Entry::Val(0), Entry::Val(1234567890), Entry::Val(18446744073709551615), 
+                Entry::Nil, Entry::Nil, Entry::Nil, Entry::Nil, Entry::Nil,
+            ],
+            q: 3,
+            len: 3,
+            hasher: hashers::Multiplicative::with_seed(11),
+        };
+        let lhs3 = LinearHashTable { 
+            dim: 1,
+            table: vec![Entry::Nil, Entry::Nil],
+            q: 0,
+            len: 0,
+            hasher: hashers::Multiplicative::with_seed(1),
+        };
+        assert_eq!(lhs1, lhs1);
+        assert_eq!(lhs1, lhs2);
+        assert_ne!(lhs1, lhs3);
+        assert_eq!(lhs3, lhs3);
+    }
+
+    #[test]
+    fn initialize() {
+        let h = hashers::Multiplicative::with_seed(32);
+        let lhs = LinearHashTable::initialize(h);
+        assert_eq!(lhs.dim, 1);
+        assert_eq!(lhs.table.len(), 2);
+        assert_eq!(lhs.len, 0);
+        assert!(lhs.table.iter().all(|entry| *entry == Entry::Nil));
+    }
+
+    #[test]
+    fn contains() {
+        let lhs1 = LinearHashTable { 
+            dim: 3,
+            table: vec![
+                Entry::Val(0), Entry::Del, Entry::Nil, Entry::Nil, 
+                Entry::Nil, Entry::Nil, Entry::Val(1234567890), Entry::Nil,
+            ],
+            q: 3,
+            len: 2,
+            hasher: hashers::Multiplicative::with_seed(101325),
+        };
+        assert!(lhs1.contains(0));
+        assert!(lhs1.contains(1234567890));
+        assert!(!lhs1.contains(18446744073709551615));
+        assert!(!lhs1.contains(151));
+    }
+    #[test]
+    fn add() {
+        let hasher = hashers::Multiplicative::with_seed(42);
+        let mut lhs = LinearHashTable { 
+            dim: 1, table: vec![Entry::Nil, Entry::Nil], q: 0, len: 0, hasher
+        };
+        assert_eq!(lhs.add(0), Ok(()));
+        assert_eq!(lhs.len(), 1);
+        assert!(lhs.contains(0));
+
+        assert_eq!(lhs.add(101054), Ok(()));
+        assert_eq!(lhs.len(), 2);
+        assert!(lhs.contains(101054));
+
+        assert_eq!(lhs.add(101054), Err(Error::KeyAlreadyExists));
+        assert_eq!(lhs.len(), 2);
+        assert!(lhs.contains(101054));
+
+        assert_eq!(lhs.add(18446744073709551615), Ok(()));
+        assert_eq!(lhs.len(), 3);
+        assert!(lhs.contains(18446744073709551615));
+    }
+}
