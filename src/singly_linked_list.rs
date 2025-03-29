@@ -30,6 +30,16 @@ impl<T> SLList<T> {
         self.size
     }
 
+    pub fn push(&mut self, x: T) {
+        let new_node = Node::new(x, self.head.as_ref());
+        self.head = Some(new_node);
+
+        if self.tail.is_none() {
+            self.tail = self.head.as_ref().map(|link| Rc::clone(link));
+        }
+        self.size += 1;
+    }
+
     pub fn iter(&self) -> SLListIter<T> {
         SLListIter { ref_to: &self.head }
     }
