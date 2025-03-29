@@ -29,4 +29,22 @@ impl<T> SLList<T> {
     pub fn size(&self) -> usize {
         self.size
     }
+
+    pub fn iter(&self) -> SLListIter<T> {
+        SLListIter { ref_to: &self.head }
+    }
+}
+
+pub struct SLListIter<'a, T> {
+    ref_to: &'a Option<Link<T>>,
+}
+
+impl<'a, T> Iterator for SLListIter<'a, T> {
+    type Item = &'a T;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        let item = self.ref_to.as_ref()?;
+        self.ref_to = &item.next;
+        Some(&item.value)
+    }
 }
