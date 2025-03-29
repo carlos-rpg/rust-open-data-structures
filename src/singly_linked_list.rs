@@ -58,3 +58,67 @@ impl<'a, T> Iterator for SLListIter<'a, T> {
         Some(&item.value)
     }
 }
+
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn iter_empty_only_returns_none() {
+        let list: SLList<i32> = SLList { head: None, tail: None, size: 0 };
+        let mut list_iter = list.iter();
+        assert_eq!(list_iter.next(), None);
+        assert_eq!(list_iter.next(), None);
+        assert_eq!(list_iter.next(), None);
+    }
+
+    #[test]
+    fn iter_one_value_returns_one_value() {
+        let mut list = SLList {
+            head: Some(Rc::new(Node { value: 0, next: None })),
+            tail: None,
+            size: 1,
+        };
+        list.tail = Some(Rc::clone(list.head.as_ref().unwrap()));
+        let mut list_iter = list.iter();
+        assert_eq!(list_iter.next(), Some(&0));
+        assert_eq!(list_iter.next(), None);
+        assert_eq!(list_iter.next(), None);
+    }
+
+    #[test]
+    fn iter_many_values_returns_two_values() {
+        let n1 = Rc::new(
+            Node { value: 1, next: None }
+        );
+        let n2 = Rc::new(
+            Node { value: 2, next: Some(Rc::clone(&n1)) }
+        );
+        let list = SLList { head: Some(n2), tail: Some(n1), size: 2 };
+        let mut list_iter = list.iter();
+        assert_eq!(list_iter.next(), Some(&2));
+        assert_eq!(list_iter.next(), Some(&1));
+        assert_eq!(list_iter.next(), None);
+    }
+
+    #[test]
+    fn push_from_empty_returns_values_back() {
+        let mut list = SLList { head: None, tail: None, size: 0 };
+        list.push('a');
+        list.push('b');
+        list.push('c');
+        assert_eq!(list.iter().collect::<Vec<&char>>(), [&'c', &'b', &'a']);
+    }
+
+    #[test]
+    fn push_from_empty_returns_correct_size() {
+        let mut list = SLList { head: None, tail: None, size: 0 };
+        list.push('a');
+        assert_eq!(list.size(), 1);
+        list.push('b');
+        assert_eq!(list.size(), 2);
+        list.push('c');
+        assert_eq!(list.size(), 3);
+    }
+}
