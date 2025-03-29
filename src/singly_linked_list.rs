@@ -1,7 +1,6 @@
 use std::rc::Rc;
-use std::cell::RefCell;
 
-type Link<T> = Rc<RefCell<Node<T>>>;
+type Link<T> = Rc<Node<T>>;
 
 pub struct SLList<T> {
     head: Option<Link<T>>,
