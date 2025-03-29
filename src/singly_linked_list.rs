@@ -14,8 +14,10 @@ struct Node<T> {
 }
 
 impl<T> Node<T> {
-    fn new(x: T) -> Self {
-        Self { value: x, next: None }
+    fn new(value: T, next: Option<&Link<T>>) -> Rc<Self> {
+        Rc::new(
+            Self { value, next: next.map(|link| Rc::clone(link)) }
+        )
     }
 }
 
