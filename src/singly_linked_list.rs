@@ -31,8 +31,7 @@ impl<T> SLList<T> {
     }
 
     pub fn push(&mut self, x: T) {
-        let new_node = Node::new(x, self.head.as_ref());
-        self.head = Some(new_node);
+        self.head = Some(Node::new(x, self.head.as_ref()));
 
         if self.tail.is_none() {
             self.tail = self.head.as_ref().map(|link| Rc::clone(link));
