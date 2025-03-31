@@ -58,20 +58,20 @@ impl<T> SLList<T> {
     }
 
     pub fn add(&mut self, x: T) {
-        let new_node = Node::new(x, None);
+        let new_link = Node::new(x, None);
 
         match self.head {
             Some(_) => {
                 let mut tail_node = self.tail
                     .as_deref()
-                    .expect("Tail is `None` but head is `Some(_)`.")
+                    .expect("Tail is `None` but head is `Some(_)`")
                     .borrow_mut();
 
-                tail_node.next.replace(Rc::clone(&new_node));
+                tail_node.next.replace(Rc::clone(&new_link));
             },
-            None => { self.head.replace(Rc::clone(&new_node)); },
+            None => { self.head.replace(Rc::clone(&new_link)); },
         }
-        self.tail = Some(new_node);
+        self.tail = Some(new_link);
         self.size += 1;
     }
 
@@ -116,18 +116,18 @@ mod tests {
 
     #[test]
     fn pop_from_initialized_returns_contents() {
-        let n1 = Rc::new(
+        let l1 = Rc::new(
             RefCell::new(Node { value: 1, next: None })
         );
-        let n1_tail = Rc::clone(&n1);
-        let n2 = Rc::new(
-            RefCell::new(Node { value: 2, next: Some(n1) })
+        let l1_tail = Rc::clone(&l1);
+        let l2 = Rc::new(
+            RefCell::new(Node { value: 2, next: Some(l1) })
         );
-        let n3 = Rc::new(
-            RefCell::new(Node { value: 3, next: Some(n2) })
+        let l3 = Rc::new(
+            RefCell::new(Node { value: 3, next: Some(l2) })
         );
         let mut list = SLList {
-            head: Some(n3), tail: Some(n1_tail), size: 3,
+            head: Some(l3), tail: Some(l1_tail), size: 3,
         };
         assert_eq!(list.pop(), Some(3));
         assert_eq!(list.pop(), Some(2));
@@ -138,18 +138,18 @@ mod tests {
 
     #[test]
     fn pop_from_initialized_keeps_track_of_size() {
-        let n1 = Rc::new(
+        let l1 = Rc::new(
             RefCell::new(Node { value: 1, next: None })
         );
-        let n1_tail = Rc::clone(&n1);
-        let n2 = Rc::new(
-            RefCell::new(Node { value: 2, next: Some(n1) })
+        let l1_tail = Rc::clone(&l1);
+        let l2 = Rc::new(
+            RefCell::new(Node { value: 2, next: Some(l1) })
         );
-        let n3 = Rc::new(
-            RefCell::new(Node { value: 3, next: Some(n2) })
+        let l3 = Rc::new(
+            RefCell::new(Node { value: 3, next: Some(l2) })
         );
         let mut list = SLList {
-            head: Some(n3), tail: Some(n1_tail), size: 3,
+            head: Some(l3), tail: Some(l1_tail), size: 3,
         };
         assert_eq!(list.size(), 3);
         list.pop();
