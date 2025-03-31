@@ -63,12 +63,12 @@ impl<T> SLList<T> {
 
         match self.head {
             Some(_) => {
-                let mut tail_node = self.tail
+                let mut tail_contents = self.tail
                     .as_deref()
                     .expect("Tail is `None` but head is `Some(_)`")
                     .borrow_mut();
 
-                tail_node.next.replace(Rc::clone(&new_link));
+                tail_contents.next.replace(Rc::clone(&new_link));
             },
             None => { self.head.replace(Rc::clone(&new_link)); },
         }
