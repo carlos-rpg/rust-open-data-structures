@@ -90,6 +90,15 @@ impl<T> Iterator for IntoIter<T> {
     }
 }
 
+impl<T> Drop for SLList<T> {
+    fn drop(&mut self) {
+        let mut next = self.head.take();
+        while let Some(link) = next {
+            next = link.borrow_mut().next.take();
+        }
+    }
+}
+
 
 #[cfg(test)]
 mod tests {
