@@ -1,6 +1,5 @@
 use std::rc::Rc;
 use std::cell::RefCell;
-use std::mem;
 
 type Link<T> = Rc<RefCell<Node<T>>>;
 
@@ -45,13 +44,17 @@ impl<T> SLList<T> {
 
     pub fn pop(&mut self) -> Option<T> {
         let pop_link = Rc::clone(self.head.as_ref()?);
-        self.head = mem::take(&mut pop_link.borrow_mut().next);
+        self.head = pop_link.borrow_mut().next.take();
 
         if self.head.is_none() {
             self.tail = None;
         }
+        let pop_contents = Rc::into_inner(pop_link)
+            .expect("Rc strong count is not 1")
+            .into_inner();
+
         self.size -= 1;
-        Rc::into_inner(pop_link).map(|cell| cell.into_inner().value)
+        Some(pop_contents.value)
     }
 
     pub fn add(&mut self, x: T) {
