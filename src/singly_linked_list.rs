@@ -54,8 +54,22 @@ impl<T> SLList<T> {
         Rc::into_inner(pop_link).map(|cell| cell.into_inner().value)
     }
 
-    pub fn add(&mut self, _x: T) {
-        unimplemented!()
+    pub fn add(&mut self, x: T) {
+        let new_node = Node::new(x, None);
+
+        match self.head {
+            Some(_) => {
+                let mut tail_node = self.tail
+                    .as_deref()
+                    .expect("Tail is `None` but head is `Some(_)`.")
+                    .borrow_mut();
+
+                tail_node.next.replace(Rc::clone(&new_node));
+            },
+            None => { self.head.replace(Rc::clone(&new_node)); },
+        }
+        self.tail = Some(new_node);
+        self.size += 1;
     }
 
     pub fn into_iter(self) -> IntoIter<T> {
@@ -143,5 +157,25 @@ mod tests {
         assert_eq!(list.size(), 0);
         list.pop();
         assert_eq!(list.size(), 0);
+    }
+
+    #[test]
+    fn add_from_empty_returns_values_back() {
+        let mut list = SLList { head: None, tail: None, size: 0 };
+        list.add('a');
+        list.add('b');
+        list.add('c');
+        assert_eq!(list.into_iter().collect::<Vec<char>>(), ['a', 'b', 'c']);
+    }
+
+    #[test]
+    fn add_from_empty_returns_correct_size() {
+        let mut list = SLList { head: None, tail: None, size: 0 };
+        list.add('a');
+        assert_eq!(list.size(), 1);
+        list.add('b');
+        assert_eq!(list.size(), 2);
+        list.add('c');
+        assert_eq!(list.size(), 3);
     }
 }
