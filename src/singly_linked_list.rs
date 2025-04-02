@@ -154,32 +154,36 @@ impl<T> SLList<T> {
         self.tail = Some(new_link);
         self.size += 1;
     }
-
-    /// Creates a consuming iterator, that is, one that moves each value out of
-    /// the list (from start to end). The list cannot be used after calling
-    /// this.
-    ///
-    /// # Examples
-    /// 
-    /// ```
-    /// # use ods::singly_linked_list::SLList;
-    /// let mut list = SLList::new();
-    /// list.push(2);
-    /// list.push(1);
-    /// list.push(0);
-    /// assert_eq!(list.into_iter().collect::<Vec<i32>>(), [0, 1, 2]);
-    /// ```
-    pub fn into_iter(self) -> IntoIter<T> {
-        IntoIter(self)
-    }
 }
 
-pub struct IntoIter<T>(SLList<T>);
+pub struct Iter<T>(SLList<T>);
 
-impl<T> Iterator for IntoIter<T> {
+impl<T> Iterator for Iter<T> {
     type Item = T;
     fn next(&mut self) -> Option<Self::Item> {
         self.0.pop()
+    }
+}
+
+/// Creates a consuming iterator, that is, one that moves each value out of
+/// the list (from start to end). The list cannot be used after calling
+/// this.
+///
+/// # Examples
+/// 
+/// ```
+/// # use ods::singly_linked_list::SLList;
+/// let mut list = SLList::new();
+/// list.push(2);
+/// list.push(1);
+/// list.push(0);
+/// assert_eq!(list.into_iter().collect::<Vec<i32>>(), [0, 1, 2]);
+/// ```
+impl<T> IntoIterator for SLList<T> {
+    type Item = T;
+    type IntoIter = Iter<T>;
+    fn into_iter(self) -> Self::IntoIter {
+        Iter(self)
     }
 }
 
