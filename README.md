@@ -27,7 +27,7 @@ sacrifice clarity for performance.
 - ❌ DualArrayDeque
 - ❌ RootishArrayStack
 3. Linked lists
-- ❌ SLList
+- ✔️ SLList
 - ❌ DLList
 - ❌ SEList
 4. Skip lists
