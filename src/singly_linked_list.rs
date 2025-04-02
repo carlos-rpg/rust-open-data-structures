@@ -1,4 +1,4 @@
-//! A safe singly linked list with head and tail access.
+//! A safe singly linked list with head and tail access
 
 use std::rc::Rc;
 use std::cell::RefCell;
@@ -31,6 +31,7 @@ pub struct SLList<T> {
     size: usize,
 }
 
+
 struct Node<T> {
     value: T,
     next: Option<Link<T>>,
@@ -43,6 +44,7 @@ impl<T> Node<T> {
         ))
     }
 }
+
 
 impl<T> SLList<T> {
     /// Creates a new, empty list.
@@ -156,43 +158,49 @@ impl<T> SLList<T> {
     }
 }
 
-pub struct Iter<T>(SLList<T>);
 
-impl<T> Iterator for Iter<T> {
+pub struct IntoIter<T>(SLList<T>);
+
+impl<T> Iterator for IntoIter<T> {
     type Item = T;
+
+    /// Advances the iterator and returns the next value. Returns None when 
+    /// iteration is finished.
     fn next(&mut self) -> Option<Self::Item> {
         self.0.pop()
     }
 }
 
-/// Creates a consuming iterator, that is, one that moves each value out of
-/// the list (from start to end). The list cannot be used after calling
-/// this.
-///
-/// # Examples
-/// 
-/// ```
-/// # use ods::singly_linked_list::SLList;
-/// let mut list = SLList::new();
-/// list.push(2);
-/// list.push(1);
-/// list.push(0);
-/// assert_eq!(list.into_iter().collect::<Vec<i32>>(), [0, 1, 2]);
-/// ```
 impl<T> IntoIterator for SLList<T> {
     type Item = T;
-    type IntoIter = Iter<T>;
+    type IntoIter = IntoIter<T>;
+
+    /// Creates a consuming iterator, that is, one that moves each value out of
+    /// the list (from start to end). The list cannot be used after calling
+    /// this.
+    ///
+    /// # Examples
+    /// 
+    /// ```
+    /// # use ods::singly_linked_list::SLList;
+    /// let mut list = SLList::new();
+    /// list.push(2);
+    /// list.push(1);
+    /// list.push(0);
+    /// assert_eq!(list.into_iter().collect::<Vec<i32>>(), [0, 1, 2]);
+    /// ```
     fn into_iter(self) -> Self::IntoIter {
-        Iter(self)
+        IntoIter(self)
     }
 }
 
-/// Iterative implementation of list desctruction.
-/// 
-/// The reason for this custom implementation is that the default one is 
-/// recursive, which has the risk of blowing the stack if the list is large 
-/// enough.
+
 impl<T> Drop for SLList<T> {
+    /// Iterative implementation of list desctruction.
+    /// 
+    /// The reason for this custom implementation is that the default one is 
+    /// recursive, which has the risk of blowing the stack if the list is large 
+    /// enough.
     fn drop(&mut self) {
         let mut next = self.head.take();
         self.tail.take();
