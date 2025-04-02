@@ -16,11 +16,9 @@ struct Node<T> {
 
 impl<T> Node<T> {
     fn new(value: T, next: Option<&Link<T>>) -> Link<T> {
-        Rc::new(
-            RefCell::new(
-                Self { value, next: next.map(|link| Rc::clone(link)) }
-            )
-        )
+        Rc::new(RefCell::new(
+            Self { value, next: next.map(|link| Rc::clone(link)) }
+        ))
     }
 }
 
@@ -51,7 +49,7 @@ impl<T> SLList<T> {
             self.tail = None;
         }
         let pop_contents = Rc::into_inner(pop_link)
-            .expect("Rc strong count is not 1")
+            .expect("`pop_link` strong count should be 1")
             .into_inner();
 
         self.size -= 1;
@@ -65,7 +63,7 @@ impl<T> SLList<T> {
             Some(_) => {
                 let mut tail_contents = self.tail
                     .as_deref()
-                    .expect("Tail is `None` but head is `Some(_)`")
+                    .expect("`self.tail` should be Some(_)")
                     .borrow_mut();
 
                 tail_contents.next.replace(Rc::clone(&new_link));
