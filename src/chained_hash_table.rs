@@ -1,9 +1,9 @@
 use std::mem;
-use crate::hashers::{self, DimHasher};
+use crate::hashers;
 
 
 #[derive(Debug, Clone)]
-pub struct ChainedHashTable<H: DimHasher> {
+pub struct ChainedHashTable<H: hashers::DimHasher> {
     dim: u32,
     table: Vec<Vec<u64>>,
     hasher: H,
@@ -16,7 +16,7 @@ pub enum Error {
     KeyNotFound,
 }
 
-impl<H: DimHasher> ChainedHashTable<H> {
+impl<H: hashers::DimHasher> ChainedHashTable<H> {
     pub fn initialize(dim: u32, hasher: H) -> Self {
         assert!(dim > 0, "ChainedHashTable dimension must be greater than 0");
         let table = Self::new_table(dim);
@@ -95,7 +95,7 @@ impl<H: DimHasher> ChainedHashTable<H> {
     }
 }
 
-impl<H: DimHasher> PartialEq for ChainedHashTable<H> {
+impl<H: hashers::DimHasher> PartialEq for ChainedHashTable<H> {
     fn eq(&self, other: &Self) -> bool {
         let is_in_other = |row: &Vec<u64>| row
             .iter()
