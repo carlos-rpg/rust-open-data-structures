@@ -13,7 +13,7 @@ type Link<T> = Rc<RefCell<Node<T>>>;
 /// # Panics
 /// 
 /// Only anomalous states should trigger a panic, such as a head with more than 
-/// one shared owner or a head being Some(_) but not the tail and viceversa.
+/// one shared owner or a head being `Some(_)` but not the tail.
 ///
 /// # Examples
 /// 
@@ -53,8 +53,7 @@ impl<T> SLList<T> {
     /// 
     /// ```
     /// # use ods::singly_linked_list::SLList;
-    /// let list: SLList<bool> = SLList::new();
-    /// assert_eq!(list.size(), 0);
+    /// let list: SLList<i32> = SLList::new();
     /// ```
     pub fn new() -> Self {
         Self { head: None, tail: None, size: 0 }
@@ -67,6 +66,7 @@ impl<T> SLList<T> {
     /// ```
     /// # use ods::singly_linked_list::SLList;
     /// let mut list = SLList::new();
+    /// assert_eq!(list.size(), 0);
     /// list.push('a');
     /// assert_eq!(list.size(), 1);
     /// ```
@@ -95,10 +95,13 @@ impl<T> SLList<T> {
 
     /// Extracts the element at the head of the list.
     /// 
+    /// As long as the list is not empty, `pop` will return values wrapped in 
+    /// `Some()`. If the list is empty, `pop` will return `None`.
+    /// 
     /// # Panics
     /// 
     /// If the head of the list had a strong count for shared ownership greater 
-    /// than one, this would panic. This is however something that under a 
+    /// than one, `pop` would panic. This is however something that under a 
     /// correct implementation should never happen.
     /// 
     /// # Examples
@@ -107,7 +110,10 @@ impl<T> SLList<T> {
     /// # use ods::singly_linked_list::SLList;
     /// let mut list = SLList::new();
     /// list.push(0);
+    /// list.push(1);
+    /// assert_eq!(list.pop(), Some(1));
     /// assert_eq!(list.pop(), Some(0));
+    /// assert_eq!(list.pop(), None);
     /// ```
     pub fn pop(&mut self) -> Option<T> {
         let pop_link = Rc::clone(self.head.as_ref()?);
@@ -136,22 +142,26 @@ impl<T> SLList<T> {
     /// ```
     /// # use ods::singly_linked_list::SLList;
     /// let mut list = SLList::new();
-    /// list.add(10);
-    /// assert_eq!(list.pop(), Some(10));
+    /// list.add(0);
+    /// list.add(1);
+    /// assert_eq!(list.pop(), Some(0));
+    /// assert_eq!(list.pop(), Some(1));
+    /// assert_eq!(list.pop(), None);
     /// ```
     pub fn add(&mut self, x: T) {
         let new_link = Node::new(x, None);
-
         match self.head {
             Some(_) => {
                 let mut tail_contents = self.tail
                     .as_deref()
-                    .expect("`self.tail` should be Some(_)")
+                    .expect("`self.tail` should be `Some(_)`")
                     .borrow_mut();
 
-                tail_contents.next.replace(Rc::clone(&new_link));
+                tail_contents.next = Some(Rc::clone(&new_link));
             },
-            None => { self.head.replace(Rc::clone(&new_link)); },
+            None => {
+                self.head = Some(Rc::clone(&new_link));
+            },
         }
         self.tail = Some(new_link);
         self.size += 1;
@@ -163,9 +173,21 @@ pub struct IntoIter<T>(SLList<T>);
 
 impl<T> Iterator for IntoIter<T> {
     type Item = T;
-
     /// Advances the iterator and returns the next value. Returns None when 
     /// iteration is finished.
+    /// 
+    /// # Examples
+    /// 
+    /// ```
+    /// # use ods::singly_linked_list::SLList;
+    /// let mut list = SLList::new();
+    /// list.push('x');
+    /// list.push('y');
+    /// let mut iter = list.into_iter();
+    /// assert_eq!(iter.next(), Some('y'));
+    /// assert_eq!(iter.next(), Some('x'));
+    /// assert_eq!(iter.next(), None);
+    /// ```
     fn next(&mut self) -> Option<Self::Item> {
         self.0.pop()
     }
@@ -174,7 +196,6 @@ impl<T> Iterator for IntoIter<T> {
 impl<T> IntoIterator for SLList<T> {
     type Item = T;
     type IntoIter = IntoIter<T>;
-
     /// Creates a consuming iterator, that is, one that moves each value out of
     /// the list (from start to end). The list cannot be used after calling
     /// this.
@@ -203,7 +224,6 @@ impl<T> Drop for SLList<T> {
     /// enough.
     fn drop(&mut self) {
         let mut next = self.head.take();
-        self.tail.take();
         while let Some(link) = next {
             next = link.borrow_mut().next.take();
         }
