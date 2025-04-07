@@ -1,6 +1,6 @@
 //! A safe, doubly linked list
 
-use std::cell::RefCell;
+use std::cell::{RefCell, Ref};
 use std::rc::Rc;
 
 type Link<T> = Rc<RefCell<Node<T>>>;
@@ -105,6 +105,16 @@ impl<T> DLList<T> {
         
         self.size -= 1;
         Some(old_node.value)
+    }
+
+    pub fn get_head(&self) -> Option<Ref<T>> {
+        let ref_node = self.head.as_ref()?.borrow();
+        Some(Ref::map(ref_node, |node| &node.value))
+    }
+
+    pub fn get_tail(&self) -> Option<Ref<T>> {
+        let ref_node = self.tail.as_ref()?.borrow();
+        Some(Ref::map(ref_node, |node| &node.value))
     }
 }
 
