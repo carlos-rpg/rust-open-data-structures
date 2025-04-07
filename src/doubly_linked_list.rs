@@ -158,7 +158,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn pop_head_from_initialized_returns_contents() {
+    fn pop_head_returns_contents() {
         let l1 = Rc::new(
             RefCell::new(Node { value: 1, next: None, prev: None})
         );
@@ -183,7 +183,7 @@ mod tests {
     }
 
     #[test]
-    fn pop_head_from_initialized_keeps_track_of_size() {
+    fn pop_head_keeps_track_of_size() {
         let l1 = Rc::new(
             RefCell::new(Node { value: 1, next: None, prev: None})
         );
@@ -212,7 +212,7 @@ mod tests {
     }
 
     #[test]
-    fn pop_tail_from_initialized_returns_contents() {
+    fn pop_tail_returns_contents() {
         let l1 = Rc::new(
             RefCell::new(Node { value: 1, next: None, prev: None})
         );
@@ -237,7 +237,7 @@ mod tests {
     }
 
     #[test]
-    fn pop_tail_from_initialized_keeps_track_of_size() {
+    fn pop_tail_keeps_track_of_size() {
         let l1 = Rc::new(
             RefCell::new(Node { value: 1, next: None, prev: None})
         );
@@ -266,7 +266,7 @@ mod tests {
     }
 
     #[test]
-    fn push_head_from_empty_returns_values_back() {
+    fn push_head_returns_contents() {
         let mut list = DLList { head: None, tail: None, size: 0 };
         list.push_head('a');
         list.push_head('b');
@@ -275,7 +275,7 @@ mod tests {
     }
 
     #[test]
-    fn push_head_from_empty_returns_correct_size() {
+    fn push_head_keeps_track_of_size() {
         let mut list = DLList { head: None, tail: None, size: 0 };
         list.push_head('a');
         assert_eq!(list.size(), 1);
@@ -286,7 +286,7 @@ mod tests {
     }
 
     #[test]
-    fn push_tail_from_empty_returns_values_back() {
+    fn push_tail_returns_contents() {
         let mut list = DLList { head: None, tail: None, size: 0 };
         list.push_tail('a');
         list.push_tail('b');
@@ -295,7 +295,7 @@ mod tests {
     }
 
     #[test]
-    fn push_tail_from_empty_returns_correct_size() {
+    fn push_tail_keeps_track_of_size() {
         let mut list = DLList { head: None, tail: None, size: 0 };
         list.push_tail('a');
         assert_eq!(list.size(), 1);
