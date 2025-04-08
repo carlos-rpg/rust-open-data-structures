@@ -1,11 +1,21 @@
-//! A safe, doubly linked list
+//! A safe, doubly linked list.
+//! 
+//! This implementation features head and tail operations in *O(1)* time, but 
+//! lacks any sort of mid insertion and deletion capabilities due to inherent 
+//! limitations of `RefCell`. More generally, it can't iterate over its elements 
+//! by reference.
+//! 
+//! Due to the lack of NULL in safe rust, the circular impelementation proposed 
+//! in the book does not hold any significant advantages over a linear 
+//! implementation but keeps the disadvantages of the dummy node. This implementation 
+//! is therefore linear.
 
 use std::cell::{RefCell, Ref};
 use std::rc::Rc;
 
 type Link<T> = Rc<RefCell<Node<T>>>;
 
-
+/// A safe, doubly linked list.
 pub struct DLList<T> {
     head: Option<Link<T>>,
     tail: Option<Link<T>>,
@@ -31,14 +41,40 @@ impl<T> Node<T> {
 }
 
 impl<T> DLList<T> {
+    /// Creates a new, empty doubly linked list.
+    /// 
+    /// # Examples
+    /// 
+    /// ```
+    /// # use ods::doubly_linked_list::DLList;
+    /// let list: DLList<i32> = DLList::new();
+    /// ```
     pub fn new() -> Self {
         Self { head: None, tail: None, size: 0 }
     }
 
+    /// Returns the number of elements contained in the list.
+    /// 
+    /// # Examples
+    /// 
+    /// ```
+    /// # use ods::doubly_linked_list::DLList;
+    /// let list: DLList<i32> = DLList::new();
+    /// assert_eq!(list.size(), 0);
+    /// ```
     pub fn size(&self) -> usize {
         self.size
     }
 
+    /// Inserts an element as the new head of the list.
+    /// 
+    /// # Examples
+    /// 
+    /// ```
+    /// # use ods::doubly_linked_list::DLList;
+    /// let mut list = DLList::new();
+    /// list.push_head(0);
+    /// ```
     pub fn push_head(&mut self, x: T) {
         let new_head = Node::new(x, self.head.as_ref(), None);
         
@@ -57,6 +93,15 @@ impl<T> DLList<T> {
         self.size += 1;
     }
 
+    /// Inserts an element as the new tail of the list.
+    /// 
+    /// # Examples
+    /// 
+    /// ```
+    /// # use ods::doubly_linked_list::DLList;
+    /// let mut list = DLList::new();
+    /// list.push_tail(0);
+    /// ```
     pub fn push_tail(&mut self, x: T) {
         let new_tail = Node::new(x, None, self.tail.as_ref());
 
@@ -75,6 +120,18 @@ impl<T> DLList<T> {
         self.size += 1;
     }
 
+    /// Extracts the element at the head of the list and returns it.
+    /// 
+    /// Returns None if the list is empty.
+    /// 
+    /// # Examples
+    /// 
+    /// ```
+    /// # use ods::doubly_linked_list::DLList;
+    /// let mut list = DLList::new();
+    /// list.push_head(0);
+    /// assert_eq!(list.pop_head(), Some(0));
+    /// ```
     pub fn pop_head(&mut self) -> Option<T> {
         let old_head = Rc::clone(self.head.as_ref()?);
         self.head = old_head.borrow_mut().next.take();
@@ -91,6 +148,18 @@ impl<T> DLList<T> {
         Some(old_node.value)
     }
 
+    /// Extracts the element at the tail of the list and returns it.
+    /// 
+    /// Returns None if the list is empty.
+    /// 
+    /// # Examples
+    /// 
+    /// ```
+    /// # use ods::doubly_linked_list::DLList;
+    /// let mut list = DLList::new();
+    /// list.push_tail(0);
+    /// assert_eq!(list.pop_tail(), Some(0));
+    /// ```
     pub fn pop_tail(&mut self) -> Option<T> {
         let old_tail = Rc::clone(self.tail.as_ref()?);
         self.tail = old_tail.borrow_mut().prev.take();
@@ -107,11 +176,35 @@ impl<T> DLList<T> {
         Some(old_node.value)
     }
 
+    /// Returns a shared reference to the head of the list.
+    /// 
+    /// Returns None if the list is empty.
+    /// 
+    /// # Examples
+    /// 
+    /// ```
+    /// # use ods::doubly_linked_list::DLList;
+    /// let mut list = DLList::new();
+    /// list.push_head('g');
+    /// assert_eq!(*list.get_head().unwrap(), 'g');
+    /// ```
     pub fn get_head(&self) -> Option<Ref<T>> {
         let ref_node = self.head.as_ref()?.borrow();
         Some(Ref::map(ref_node, |node| &node.value))
     }
 
+    /// Returns a shared reference to the tail of the list.
+    /// 
+    /// Returns None if the list is empty.
+    /// 
+    /// # Examples
+    /// 
+    /// ```
+    /// # use ods::doubly_linked_list::DLList;
+    /// let mut list = DLList::new();
+    /// list.push_tail('g');
+    /// assert_eq!(*list.get_tail().unwrap(), 'g');
+    /// ```
     pub fn get_tail(&self) -> Option<Ref<T>> {
         let ref_node = self.tail.as_ref()?.borrow();
         Some(Ref::map(ref_node, |node| &node.value))
@@ -122,6 +215,7 @@ pub struct IntoIter<T>(DLList<T>);
 
 impl<T> Iterator for IntoIter<T> {
     type Item = T;
+
     fn next(&mut self) -> Option<Self::Item> {
         self.0.pop_head()
     }
@@ -136,6 +230,7 @@ impl<T> DoubleEndedIterator for IntoIter<T> {
 impl<T> IntoIterator for DLList<T> {
     type Item = T;
     type IntoIter = IntoIter<T>;
+
     fn into_iter(self) -> Self::IntoIter {
         IntoIter(self)
     }
@@ -143,6 +238,10 @@ impl<T> IntoIterator for DLList<T> {
 
 impl<T> Drop for DLList<T> {
     fn drop(&mut self) {
+        // The reason for this custom implementation is that `Link<T>` contains 
+        // reference counted ownership `Rc<>`, which won't free their contents 
+        // until the reference count is 0. This won't happen automatically when 
+        // closed reference loops exist, like those in a `DLList`.
         let mut head_item = self.head.take();
         let mut tail_item = self.tail.take();
         while let (Some(head_node), Some(tail_node)) = (head_item, tail_item) {
