@@ -1,36 +1,12 @@
-//! A safe singly linked list with head and tail access
+//! A safe singly linked list with head access
 
-use std::rc::Rc;
-use std::cell::RefCell;
 
-type Link<T> = Rc<RefCell<Node<T>>>;
-
-/// A safe singly linked list.
-/// 
-/// This implementation allows insertion at the head and the tail of the list 
-/// in constant time, but only extraction from the head is constant.
-/// 
-/// # Panics
-/// 
-/// Only anomalous states should trigger a panic, such as a head with more than 
-/// one shared owner or a head being `Some(_)` but not the tail.
-///
-/// # Examples
-/// 
-/// ```
-/// # use ods::singly_linked_list::SLList;
-/// let mut list = SLList::new();
-/// list.push(1);
-/// list.add(-1);
-/// assert_eq!(list.pop(), Some(1));
-/// assert_eq!(list.pop(), Some(-1));
-/// ```
 pub struct SLList<T> {
     head: Option<Link<T>>,
-    tail: Option<Link<T>>,
     size: usize,
 }
 
+type Link<T> = Box<Node<T>>;
 
 struct Node<T> {
     value: T,
@@ -38,133 +14,102 @@ struct Node<T> {
 }
 
 impl<T> Node<T> {
-    fn new(value: T, next: Option<&Link<T>>) -> Link<T> {
-        Rc::new(RefCell::new(
-            Self { value, next: next.map(|link| Rc::clone(link)) }
-        ))
+    fn new(value: T, next: Option<Link<T>>) -> Link<T> {
+        Box::new(Self { value, next })
     }
 }
 
 
 impl<T> SLList<T> {
-    /// Creates a new, empty list.
-    /// 
-    /// # Examples
-    /// 
-    /// ```
-    /// # use ods::singly_linked_list::SLList;
-    /// let list: SLList<i32> = SLList::new();
-    /// ```
     pub fn new() -> Self {
-        Self { head: None, tail: None, size: 0 }
+        Self { head: None, size: 0 }
     }
 
-    /// Returns the number of elements currently in the list.
-    /// 
-    /// # Examples
-    /// 
-    /// ```
-    /// # use ods::singly_linked_list::SLList;
-    /// let mut list = SLList::new();
-    /// assert_eq!(list.size(), 0);
-    /// list.push('a');
-    /// assert_eq!(list.size(), 1);
-    /// ```
     pub fn size(&self) -> usize {
         self.size
     }
 
-    /// Inserts an element at the head of the list.
-    /// 
-    /// # Examples
-    /// 
-    /// ```
-    /// # use ods::singly_linked_list::SLList;
-    /// let mut list = SLList::new();
-    /// list.push(0);
-    /// ```
+    pub fn get(&self, at: usize) -> Option<&T> {
+        let mut node = self.head.as_deref()?; 
+        for _ in 0..at {
+            node = node.next.as_deref()?;
+        }
+        Some(&node.value)
+    }
+
+    pub fn get_mut(&mut self, at: usize) -> Option<&mut T> {
+        let mut node = self.head.as_deref_mut()?;
+        for _ in 0..at {
+            node = node.next.as_deref_mut()?;
+        }
+        Some(&mut node.value)
+    }
+
     pub fn push(&mut self, x: T) {
-        let new_link = Node::new(x, self.head.as_ref());
-        self.head = Some(Rc::clone(&new_link));
-
-        if self.tail.is_none() {
-            self.tail = Some(new_link);
-        }
+        self.head = Some(Node::new(x, self.head.take()));
         self.size += 1;
     }
 
-    /// Extracts the element at the head of the list.
-    /// 
-    /// As long as the list is not empty, `pop` will return values wrapped in 
-    /// `Some()`. If the list is empty, `pop` will return `None`.
-    /// 
-    /// # Panics
-    /// 
-    /// If the head of the list had a strong count for shared ownership greater 
-    /// than one, `pop` would panic. This is however something that under a 
-    /// correct implementation should never happen.
-    /// 
-    /// # Examples
-    /// 
-    /// ```
-    /// # use ods::singly_linked_list::SLList;
-    /// let mut list = SLList::new();
-    /// list.push(0);
-    /// list.push(1);
-    /// assert_eq!(list.pop(), Some(1));
-    /// assert_eq!(list.pop(), Some(0));
-    /// assert_eq!(list.pop(), None);
-    /// ```
     pub fn pop(&mut self) -> Option<T> {
-        let pop_link = Rc::clone(self.head.as_ref()?);
-        self.head = pop_link.borrow_mut().next.take();
-
-        if self.head.is_none() {
-            self.tail = None;
-        }
-        let pop_contents = Rc::into_inner(pop_link)
-            .expect("`pop_link` strong count should be 1")
-            .into_inner();
-
+        let mut pop_link = self.head.take()?;
+        self.head = pop_link.next.take();
         self.size -= 1;
-        Some(pop_contents.value)
+        Some(pop_link.value)
     }
 
-    /// Inserts an element at the tail of the list.
-    /// 
-    /// # Panics
-    /// 
-    /// If the head is `Some(_)` but the tail is `None`, the function panics. 
-    /// But this should never happen under a correct implementation.
-    /// 
-    /// # Examples
-    /// 
-    /// ```
-    /// # use ods::singly_linked_list::SLList;
-    /// let mut list = SLList::new();
-    /// list.add(0);
-    /// list.add(1);
-    /// assert_eq!(list.pop(), Some(0));
-    /// assert_eq!(list.pop(), Some(1));
-    /// assert_eq!(list.pop(), None);
-    /// ```
-    pub fn add(&mut self, x: T) {
-        let new_link = Node::new(x, None);
-        match self.head {
-            Some(_) => {
-                let mut tail_contents = self.tail
-                    .as_deref()
-                    .expect("`self.tail` should be `Some(_)`")
-                    .borrow_mut();
+    pub fn iter(&self) -> Iter<T> {
+        Iter(self.head.as_ref())
+    }
 
-                tail_contents.next = Some(Rc::clone(&new_link));
-            },
-            None => {
-                self.head = Some(Rc::clone(&new_link));
-            },
+    pub fn iter_mut(&mut self) -> IterMut<T> {
+        IterMut(self.head.as_mut())
+    }
+
+    pub fn split(&mut self, at: usize) -> Option<Self> {
+        let mut other = Self::new();
+
+        other.head = if at == 0 {
+            self.head.take()
+        } else {
+            let mut link = self.head.as_mut()?;
+            for _ in 1..at {
+                link = link.next.as_mut()?;
+            }
+            link.next.take()
+        };
+        other.size = self.size() - at;
+        self.size = at;
+        Some(other)
+    }
+
+    pub fn append(&mut self, mut other: Self) {
+        let self_size = self.size();
+
+        if self_size == 0 {
+            self.head = other.head.take();
+        } else {
+            let mut link = self.head
+                .as_mut()
+                .expect("`self.head` should be `Some(_)`");
+
+            for _ in 1..self_size {
+                link = link.next
+                    .as_mut()
+                    .expect("`link.next` should be `Some(_)`");
+            }
+            link.next = other.head.take();
         }
-        self.tail = Some(new_link);
-        self.size += 1;
+        self.size += other.size();
+    }
+}
+
+
+impl<T> IntoIterator for SLList<T> {
+    type Item = T;
+    type IntoIter = IntoIter<T>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        IntoIter(self)
     }
 }
 
@@ -173,59 +118,47 @@ pub struct IntoIter<T>(SLList<T>);
 
 impl<T> Iterator for IntoIter<T> {
     type Item = T;
-    /// Advances the iterator and returns the next value. Returns None when 
-    /// iteration is finished.
-    /// 
-    /// # Examples
-    /// 
-    /// ```
-    /// # use ods::singly_linked_list::SLList;
-    /// let mut list = SLList::new();
-    /// list.push('x');
-    /// list.push('y');
-    /// let mut iter = list.into_iter();
-    /// assert_eq!(iter.next(), Some('y'));
-    /// assert_eq!(iter.next(), Some('x'));
-    /// assert_eq!(iter.next(), None);
-    /// ```
+
     fn next(&mut self) -> Option<Self::Item> {
         self.0.pop()
     }
 }
 
-impl<T> IntoIterator for SLList<T> {
-    type Item = T;
-    type IntoIter = IntoIter<T>;
-    /// Creates a consuming iterator, that is, one that moves each value out of
-    /// the list (from start to end). The list cannot be used after calling
-    /// this.
-    ///
-    /// # Examples
-    /// 
-    /// ```
-    /// # use ods::singly_linked_list::SLList;
-    /// let mut list = SLList::new();
-    /// list.push(2);
-    /// list.push(1);
-    /// list.push(0);
-    /// assert_eq!(list.into_iter().collect::<Vec<i32>>(), [0, 1, 2]);
-    /// ```
-    fn into_iter(self) -> Self::IntoIter {
-        IntoIter(self)
+
+pub struct Iter<'a, T>(Option<&'a Link<T>>);
+
+impl<'a, T> Iterator for Iter<'a, T> {
+    type Item = &'a T;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        let link = self.0?;
+        self.0 = link.next.as_ref();
+        Some(&link.value)
+    }
+}
+
+
+pub struct IterMut<'a, T>(Option<&'a mut Link<T>>);
+
+impl<'a, T> Iterator for IterMut<'a, T> {
+    type Item = &'a mut T;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        let link = self.0.take()?;
+        self.0 = link.next.as_mut();
+        Some(&mut link.value)
     }
 }
 
 
 impl<T> Drop for SLList<T> {
-    /// Iterative implementation of list desctruction.
-    /// 
-    /// The reason for this custom implementation is that the default one is 
-    /// recursive, which has the risk of blowing the stack if the list is large 
-    /// enough.
     fn drop(&mut self) {
-        let mut next = self.head.take();
-        while let Some(link) = next {
-            next = link.borrow_mut().next.take();
+        // The reason for this custom implementation is that the default one is 
+        // recursive, which has the risk of blowing the stack if the list is large 
+        // enough.
+        let mut link_opt = self.head.take();
+        while let Some(mut link) = link_opt {
+            link_opt = link.next.take();
         }
     }
 }
@@ -235,64 +168,67 @@ impl<T> Drop for SLList<T> {
 mod tests {
     use super::*;
 
-    #[test]
-    fn push_from_empty_returns_values_back() {
-        let mut list = SLList { head: None, tail: None, size: 0 };
-        list.push('a');
-        list.push('b');
-        list.push('c');
-        assert_eq!(list.into_iter().collect::<Vec<char>>(), ['c', 'b', 'a']);
+    fn build_test_list() -> SLList<i32> {
+        let link2 = Box::new(Node { value: 2, next: None });
+        let link1 = Box::new(Node { value: 1, next: Some(link2) });
+        let link0 = Box::new(Node { value: 0, next: Some(link1) });
+        SLList { head: Some(link0), size: 3 }
     }
 
     #[test]
-    fn push_from_empty_returns_correct_size() {
-        let mut list = SLList { head: None, tail: None, size: 0 };
-        list.push('a');
-        assert_eq!(list.size(), 1);
-        list.push('b');
-        assert_eq!(list.size(), 2);
-        list.push('c');
-        assert_eq!(list.size(), 3);
+    fn get_size_zero_returns_none() {
+        let list: SLList<i32> = SLList { head: None, size: 0 };
+        assert_eq!(list.get(0), None);
+        assert_eq!(list.get(1), None);
+        assert_eq!(list.get(2), None);
     }
 
     #[test]
-    fn pop_from_initialized_returns_contents() {
-        let l1 = Rc::new(
-            RefCell::new(Node { value: 1, next: None })
-        );
-        let l1_tail = Rc::clone(&l1);
-        let l2 = Rc::new(
-            RefCell::new(Node { value: 2, next: Some(l1) })
-        );
-        let l3 = Rc::new(
-            RefCell::new(Node { value: 3, next: Some(l2) })
-        );
-        let mut list = SLList {
-            head: Some(l3), tail: Some(l1_tail), size: 3,
+    fn get_size_one_returns_some_and_none() {
+        let list = SLList { 
+            head: Some(Box::new(Node {value: 'x', next: None })),
+            size: 1, 
         };
-        assert_eq!(list.pop(), Some(3));
-        assert_eq!(list.pop(), Some(2));
+        assert_eq!(list.get(0), Some(&'x'));
+        assert_eq!(list.get(1), None);
+        assert_eq!(list.get(2), None);
+    }
+
+    #[test]
+    fn get_size_greater_than_one_returns_some_and_none() {
+        let list = build_test_list();
+        assert_eq!(list.get(0), Some(&0));
+        assert_eq!(list.get(1), Some(&1));
+        assert_eq!(list.get(2), Some(&2));
+        assert_eq!(list.get(3), None);
+        assert_eq!(list.get(4), None);
+    }
+
+    #[test]
+    fn get_mut_size_one_mutates_list() {
+        let mut list = SLList { 
+            head: Some(Box::new(Node {value: 0, next: None })),
+            size: 1, 
+        };
+        let zero = list.get_mut(0).unwrap();
+        assert_eq!(zero, &0);
+        *zero = 1;
+        assert_eq!(zero, &1);
+    }
+
+    #[test]
+    fn pop_returns_values() {
+        let mut list = build_test_list();
+        assert_eq!(list.pop(), Some(0));
         assert_eq!(list.pop(), Some(1));
+        assert_eq!(list.pop(), Some(2));
         assert_eq!(list.pop(), None);
         assert_eq!(list.pop(), None);
     }
 
     #[test]
-    fn pop_from_initialized_keeps_track_of_size() {
-        let l1 = Rc::new(
-            RefCell::new(Node { value: 1, next: None })
-        );
-        let l1_tail = Rc::clone(&l1);
-        let l2 = Rc::new(
-            RefCell::new(Node { value: 2, next: Some(l1) })
-        );
-        let l3 = Rc::new(
-            RefCell::new(Node { value: 3, next: Some(l2) })
-        );
-        let mut list = SLList {
-            head: Some(l3), tail: Some(l1_tail), size: 3,
-        };
-        assert_eq!(list.size(), 3);
+    fn pop_keeps_track_of_size() {
+        let mut list = build_test_list();
         list.pop();
         assert_eq!(list.size(), 2);
         list.pop();
@@ -304,22 +240,165 @@ mod tests {
     }
 
     #[test]
-    fn add_from_empty_returns_values_back() {
-        let mut list = SLList { head: None, tail: None, size: 0 };
-        list.add('a');
-        list.add('b');
-        list.add('c');
-        assert_eq!(list.into_iter().collect::<Vec<char>>(), ['a', 'b', 'c']);
+    fn push_grows_the_list() {
+        let mut list = SLList { head: None, size: 0 };
+        list.push(0);
+        list.push(1);
+        list.push(2);
+        list.push(3);
+        assert_eq!(list.into_iter().collect::<Vec<i32>>(), [3, 2, 1, 0]);
     }
 
     #[test]
-    fn add_from_empty_returns_correct_size() {
-        let mut list = SLList { head: None, tail: None, size: 0 };
-        list.add('a');
+    fn push_keeps_track_of_size() {
+        let mut list = SLList { head: None, size: 0 };
+        list.push(0);
         assert_eq!(list.size(), 1);
-        list.add('b');
+        list.push(1);
         assert_eq!(list.size(), 2);
-        list.add('c');
+        list.push(2);
         assert_eq!(list.size(), 3);
+        list.push(3);
+        assert_eq!(list.size(), 4);
+    }
+
+    #[test]
+    fn split_empty_list_returns_empty_list() {
+        let mut list1: SLList<i32> = SLList { head: None, size: 0 };
+        let list2 = list1.split(0).unwrap();
+        assert_eq!(list1.into_iter().collect::<Vec<i32>>(), []);
+        assert_eq!(list2.into_iter().collect::<Vec<i32>>(), []);
+    }
+
+    #[test]
+    fn split_empty_list_returns_sizes_as_zero() {
+        let mut list1: SLList<i32> = SLList { head: None, size: 0 };
+        let list2 = list1.split(0).unwrap();
+        assert_eq!(list1.size(), 0);
+        assert_eq!(list2.size(), 0);
+    }
+
+    #[test]
+    fn split_at_zero_returns_full_original_list() {
+        let mut list1 = build_test_list();
+        let list2 = list1.split(0).unwrap();
+        assert_eq!(list1.into_iter().collect::<Vec<i32>>(), []);
+        assert_eq!(list2.into_iter().collect::<Vec<i32>>(), [0, 1, 2]);
+    }
+
+    #[test]
+    fn split_at_zero_returns_zero_and_full_sizes() {
+        let mut list1 = build_test_list();
+        let list2 = list1.split(0).unwrap();
+        assert_eq!(list1.size(), 0);
+        assert_eq!(list2.size(), 3);
+    }
+
+    #[test]
+    fn split_at_end_returns_empty_list() {
+        let mut list1 = build_test_list();
+        let list2 = list1.split(list1.size()).unwrap();
+        assert_eq!(list1.into_iter().collect::<Vec<i32>>(), [0, 1, 2]);
+        assert_eq!(list2.into_iter().collect::<Vec<i32>>(), []);
+    }
+
+    #[test]
+    fn split_at_end_returns_full_and_zero_sizes() {
+        let mut list1 = build_test_list();
+        let list2 = list1.split(list1.size()).unwrap();
+        assert_eq!(list1.size(), 3);
+        assert_eq!(list2.size(), 0);
+    }
+
+    #[test]
+    fn split_at_mid_returns_partial_list() {
+        let mut list1 = build_test_list();
+        let list2 = list1.split(1).unwrap();
+        assert_eq!(list1.into_iter().collect::<Vec<i32>>(), [0]);
+        assert_eq!(list2.into_iter().collect::<Vec<i32>>(), [1, 2]);
+    }
+
+    #[test]
+    fn split_at_mid_returns_partial_sizes() {
+        let mut list1 = build_test_list();
+        let list2 = list1.split(1).unwrap();
+        assert_eq!(list1.size(), 1);
+        assert_eq!(list2.size(), 2);
+    }
+
+    #[test]
+    fn split_out_of_range_returns_none() {
+        let mut list = build_test_list();
+        assert!(list.split(4).is_none());
+        assert!(list.split(5).is_none());
+        assert!(list.split(4).is_none());
+    }
+
+    #[test]
+    fn split_out_of_range_doesnt_change_size() {
+        let mut list = build_test_list();
+        assert_eq!(list.size(), 3);
+        list.split(4);
+        assert_eq!(list.size(), 3);
+        list.split(5);
+        assert_eq!(list.size(), 3);
+        list.split(4);
+        assert_eq!(list.size(), 3);
+    }
+
+    #[test]
+    fn append_empty_list_to_empty_list_stays_empty() {
+        let mut list1: SLList<i32> = SLList { head: None, size: 0 };
+        let list2 = SLList { head: None, size: 0 };
+        list1.append(list2);
+        assert_eq!(list1.into_iter().collect::<Vec<i32>>(), []);
+    }
+
+    #[test]
+    fn append_emtpy_to_non_empty_stays_unchanged() {
+        let mut list1 = build_test_list();
+        let list2 = SLList { head: None, size: 0};
+        list1.append(list2);
+        assert_eq!(list1.into_iter().collect::<Vec<i32>>(), [0, 1, 2]);
+    }
+
+    #[test]
+    fn append_non_emtpy_to_empty_transfers_contents() {
+        let mut list1 = SLList { head: None, size: 0 };
+        let list2 = build_test_list();
+        list1.append(list2);
+        assert_eq!(list1.into_iter().collect::<Vec<i32>>(), [0, 1, 2]);
+    }
+
+    #[test]
+    fn append_non_emtpy_to_non_empty_transfers_contents() {
+        let mut list1 = build_test_list();
+        let list2 = build_test_list();
+        list1.append(list2);
+        assert_eq!(list1.into_iter().collect::<Vec<i32>>(), [0, 1, 2, 0, 1, 2]);
+    }
+
+    #[test]
+    fn append_emtpy_to_non_empty_keeps_size() {
+        let mut list1 = build_test_list();
+        let list2 = SLList { head: None, size: 0};
+        list1.append(list2);
+        assert_eq!(list1.size(), 3);
+    }
+
+    #[test]
+    fn append_non_emtpy_to_empty_updates_size() {
+        let mut list1 = SLList { head: None, size: 0 };
+        let list2 = build_test_list();
+        list1.append(list2);
+        assert_eq!(list1.size(), 3);
+    }
+
+    #[test]
+    fn append_non_emtpy_to_non_empty_updates_size() {
+        let mut list1 = build_test_list();
+        let list2 = build_test_list();
+        list1.append(list2);
+        assert_eq!(list1.size(), 6);
     }
 }
