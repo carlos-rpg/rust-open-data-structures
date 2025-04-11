@@ -1,6 +1,12 @@
-//! A safe singly linked list with head access
+//! A safe singly linked list with head access.
+//! 
+//! Unlike the book, this implementation avoids the tail reference on purpose 
+//! because single linked lists are ideal to show what the `Box` smart pointer 
+//! can do. Although limited to one owner like any other mutable reference, `Box` 
+//! is much more flexible than `Rc<RefCell<>>` used for the doubly linked list.
 
 
+/// A safe singly linked list.
 pub struct SLList<T> {
     head: Option<Link<T>>,
     size: usize,
@@ -21,14 +27,54 @@ impl<T> Node<T> {
 
 
 impl<T> SLList<T> {
+    /// Creates a new, empty list.
+    /// 
+    /// # Examples
+    /// 
+    /// ```
+    /// # use ods::singly_linked_list::SLList;
+    /// let list: SLList<i32> = SLList::new();
+    /// ```
     pub fn new() -> Self {
         Self { head: None, size: 0 }
     }
 
+    /// Returns the number of element in the list.
+    /// 
+    /// # Examples
+    /// 
+    /// ```
+    /// # use ods::singly_linked_list::SLList;
+    /// let list: SLList<i32> = SLList::new();
+    /// assert_eq!(list.size(), 0);
+    /// ```
     pub fn size(&self) -> usize {
         self.size
     }
 
+    /// Returns true if the list is empty, false otherwise.
+    /// 
+    /// # Examples
+    /// 
+    /// ```
+    /// # use ods::singly_linked_list::SLList;
+    /// let list: SLList<i32> = SLList::new();
+    /// assert!(list.is_empty());
+    /// ```
+    pub fn is_empty(&self) -> bool {
+        self.size() == 0
+    }
+
+    /// Returns a shared reference to the value at the given position.
+    /// 
+    /// # Examples
+    /// 
+    /// ```
+    /// # use ods::singly_linked_list::SLList;
+    /// let mut list = SLList::new();
+    /// list.push('a');
+    /// assert_eq!(list.get(0), Some(&'a'));
+    /// ```
     pub fn get(&self, at: usize) -> Option<&T> {
         let mut node = self.head.as_deref()?; 
         for _ in 0..at {
@@ -37,6 +83,20 @@ impl<T> SLList<T> {
         Some(&node.value)
     }
 
+    /// Returns a mutable reference to the value at the given position. Returns 
+    /// none if the position is out of the list.
+    /// 
+    /// # Examples
+    /// 
+    /// ```
+    /// # use ods::singly_linked_list::SLList;
+    /// let mut list = SLList::new();
+    /// list.push('a');
+    /// let mut mutable = list.get_mut(0).unwrap();
+    /// assert_eq!(*mutable, 'a');
+    /// *mutable = 'x';
+    /// assert_eq!(*mutable, 'x');
+    /// ```
     pub fn get_mut(&mut self, at: usize) -> Option<&mut T> {
         let mut node = self.head.as_deref_mut()?;
         for _ in 0..at {
@@ -45,11 +105,36 @@ impl<T> SLList<T> {
         Some(&mut node.value)
     }
 
+    /// Inserts a value as the new head of the list.
+    /// 
+    /// # Examples
+    /// 
+    /// ```
+    /// # use ods::singly_linked_list::SLList;
+    /// let mut list = SLList::new();
+    /// list.push('a');
+    /// assert_eq!(list.get(0), Some(&'a'));
+    /// list.push('b');
+    /// assert_eq!(list.get(0), Some(&'b'));
+    /// ```
     pub fn push(&mut self, x: T) {
         self.head = Some(Node::new(x, self.head.take()));
         self.size += 1;
     }
 
+    /// Removes the value at the head of the list and returns it. Returns None 
+    /// if the list is empty.
+    /// 
+    /// # Examples
+    /// 
+    /// ```
+    /// # use ods::singly_linked_list::SLList;
+    /// let mut list = SLList::new();
+    /// list.push('a');
+    /// list.push('b');
+    /// assert_eq!(list.pop(), Some('b'));
+    /// assert_eq!(list.pop(), Some('a'));
+    /// ```
     pub fn pop(&mut self) -> Option<T> {
         let mut pop_link = self.head.take()?;
         self.head = pop_link.next.take();
@@ -57,14 +142,49 @@ impl<T> SLList<T> {
         Some(pop_link.value)
     }
 
+    /// Returns an iterator of shared references to the list's values.
+    /// 
+    /// # Examples
+    /// 
+    /// ```
+    /// # use ods::singly_linked_list::SLList;
+    /// let mut list = SLList::new();
+    /// list.push('a');
+    /// assert_eq!(list.iter().next(), Some(&'a'));
+    /// ```
     pub fn iter(&self) -> Iter<T> {
         Iter(self.head.as_ref())
     }
 
+    /// Returns an iterator of mutable references to the list's values.
+    /// 
+    /// # Examples
+    /// 
+    /// ```
+    /// # use ods::singly_linked_list::SLList;
+    /// let mut list = SLList::new();
+    /// list.push('a');
+    /// assert_eq!(list.iter_mut().next(), Some(&mut 'a'));
+    /// ```
     pub fn iter_mut(&mut self) -> IterMut<T> {
         IterMut(self.head.as_mut())
     }
 
+    /// Splits `self` at the given position, returning the rest of the list as 
+    /// a new one. Returns None if the position is out of the list.
+    /// 
+    /// # Examples
+    /// 
+    /// ```
+    /// # use ods::singly_linked_list::SLList;
+    /// let mut list1 = SLList::new();
+    /// list1.push('a');
+    /// list1.push('b');
+    /// list1.push('c');
+    /// let mut list2 = list1.split(1).unwrap();
+    /// assert_eq!(list1.into_iter().collect::<Vec<char>>(), ['c']);
+    /// assert_eq!(list2.into_iter().collect::<Vec<char>>(), ['b', 'a']);
+    /// ```
     pub fn split(&mut self, at: usize) -> Option<Self> {
         let mut other = Self::new();
 
@@ -81,13 +201,27 @@ impl<T> SLList<T> {
         self.size = at;
         Some(other)
     }
-
+    
+    /// Appends `other` to the end of `self`.
+    /// 
+    /// # Examples
+    /// 
+    /// ```
+    /// # use ods::singly_linked_list::SLList;
+    /// let mut list1 = SLList::new();
+    /// list1.push('a');
+    /// list1.push('b');
+    /// let mut list2 = SLList::new();
+    /// list2.push('c');
+    /// list2.push('d');
+    /// list1.append(list2);
+    /// assert_eq!(list1.into_iter().collect::<Vec<char>>(), ['b', 'a', 'd', 'c']);
+    /// ```
     pub fn append(&mut self, mut other: Self) {
-        let self_size = self.size();
-
-        if self_size == 0 {
+        if self.is_empty() {
             self.head = other.head.take();
         } else {
+            let self_size = self.size();
             let mut link = self.head
                 .as_mut()
                 .expect("`self.head` should be `Some(_)`");
