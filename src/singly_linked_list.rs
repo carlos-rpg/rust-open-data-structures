@@ -8,19 +8,18 @@
 
 /// A safe singly linked list.
 pub struct SLList<T> {
-    head: Option<Link<T>>,
+    head: Option<Box<Node<T>>>,
     size: usize,
 }
 
-type Link<T> = Box<Node<T>>;
 
 struct Node<T> {
     value: T,
-    next: Option<Link<T>>,
+    next: Option<Box<Node<T>>>,
 }
 
 impl<T> Node<T> {
-    fn new(value: T, next: Option<Link<T>>) -> Link<T> {
+    fn new(value: T, next: Option<Box<Node<T>>>) -> Box<Node<T>> {
         Box::new(Self { value, next })
     }
 }
@@ -136,10 +135,10 @@ impl<T> SLList<T> {
     /// assert_eq!(list.pop(), Some('a'));
     /// ```
     pub fn pop(&mut self) -> Option<T> {
-        let mut pop_link = self.head.take()?;
-        self.head = pop_link.next.take();
+        let mut pop_node = self.head.take()?;
+        self.head = pop_node.next.take();
         self.size -= 1;
-        Some(pop_link.value)
+        Some(pop_node.value)
     }
 
     /// Returns an iterator of shared references to the list's values.
@@ -186,12 +185,12 @@ impl<T> SLList<T> {
     /// assert_eq!(list2.into_iter().collect::<Vec<char>>(), ['b', 'a']);
     /// ```
     pub fn split(&mut self, at: usize) -> Option<Self> {
-        let mut link_opt = &mut self.head;
+        let mut node_opt = &mut self.head;
 
         for _ in 0..at {
-            link_opt = &mut link_opt.as_mut()?.next;
+            node_opt = &mut node_opt.as_mut()?.next;
         }
-        let other = Self { head: link_opt.take(), size: self.size() - at };
+        let other = Self { head: node_opt.take(), size: self.size() - at };
         self.size = at;
         Some(other)
     }
@@ -212,12 +211,12 @@ impl<T> SLList<T> {
     /// assert_eq!(list1.into_iter().collect::<Vec<char>>(), ['b', 'a', 'd', 'c']);
     /// ```
     pub fn append(&mut self, mut other: Self) {
-        let mut link_opt = &mut self.head;
+        let mut node_opt = &mut self.head;
 
-        while let Some(link) = link_opt {
-            link_opt = &mut link.next;
+        while let Some(node) = node_opt {
+            node_opt = &mut node.next;
         }
-        *link_opt = other.head.take();
+        *node_opt = other.head.take();
         self.size += other.size();
     }
 }
@@ -244,28 +243,28 @@ impl<T> Iterator for IntoIter<T> {
 }
 
 
-pub struct Iter<'a, T>(Option<&'a Link<T>>);
+pub struct Iter<'a, T>(Option<&'a Box<Node<T>>>);
 
 impl<'a, T> Iterator for Iter<'a, T> {
     type Item = &'a T;
 
     fn next(&mut self) -> Option<Self::Item> {
-        let link = self.0?;
-        self.0 = link.next.as_ref();
-        Some(&link.value)
+        let node = self.0?;
+        self.0 = node.next.as_ref();
+        Some(&node.value)
     }
 }
 
 
-pub struct IterMut<'a, T>(Option<&'a mut Link<T>>);
+pub struct IterMut<'a, T>(Option<&'a mut Box<Node<T>>>);
 
 impl<'a, T> Iterator for IterMut<'a, T> {
     type Item = &'a mut T;
 
     fn next(&mut self) -> Option<Self::Item> {
-        let link = self.0.take()?;
-        self.0 = link.next.as_mut();
-        Some(&mut link.value)
+        let node = self.0.take()?;
+        self.0 = node.next.as_mut();
+        Some(&mut node.value)
     }
 }
 
@@ -275,9 +274,9 @@ impl<T> Drop for SLList<T> {
         // The reason for this custom implementation is that the default one is 
         // recursive, which has the risk of blowing the stack if the list is large 
         // enough.
-        let mut link_opt = self.head.take();
-        while let Some(mut link) = link_opt {
-            link_opt = link.next.take();
+        let mut node_opt = self.head.take();
+        while let Some(mut node) = node_opt {
+            node_opt = node.next.take();
         }
     }
 }
@@ -288,10 +287,10 @@ mod tests {
     use super::*;
 
     fn build_test_list() -> SLList<i32> {
-        let link2 = Box::new(Node { value: 2, next: None });
-        let link1 = Box::new(Node { value: 1, next: Some(link2) });
-        let link0 = Box::new(Node { value: 0, next: Some(link1) });
-        SLList { head: Some(link0), size: 3 }
+        let node2 = Box::new(Node { value: 2, next: None });
+        let node1 = Box::new(Node { value: 1, next: Some(node2) });
+        let node0 = Box::new(Node { value: 0, next: Some(node1) });
+        SLList { head: Some(node0), size: 3 }
     }
 
     #[test]
