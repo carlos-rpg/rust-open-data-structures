@@ -28,13 +28,15 @@ sacrifice clarity for performance.
 - ❌ RootishArrayStack
 3. Linked lists
 - ✔️ SLList
-- ❌ DLList
+- ✔️ DLList
 - ❌ SEList
 4. Skip lists
 5. Hash tables
 - ✔️ ChainedHashTable
 - ✔️ LinearHashTable
 6. Binary trees
+- ❌ BinaryTree
+- ❌ BinarySearchTree
 7. Random binary search trees
 8. Scapegoat trees
 9. Red-black trees
