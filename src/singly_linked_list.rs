@@ -186,18 +186,12 @@ impl<T> SLList<T> {
     /// assert_eq!(list2.into_iter().collect::<Vec<char>>(), ['b', 'a']);
     /// ```
     pub fn split(&mut self, at: usize) -> Option<Self> {
-        let mut other = Self::new();
+        let mut link_opt = &mut self.head;
 
-        other.head = if at == 0 {
-            self.head.take()
-        } else {
-            let mut link = self.head.as_mut()?;
-            for _ in 1..at {
-                link = link.next.as_mut()?;
-            }
-            link.next.take()
-        };
-        other.size = self.size() - at;
+        for _ in 0..at {
+            link_opt = &mut link_opt.as_mut()?.next;
+        }
+        let other = Self { head: link_opt.take(), size: self.size() - at };
         self.size = at;
         Some(other)
     }
@@ -218,21 +212,12 @@ impl<T> SLList<T> {
     /// assert_eq!(list1.into_iter().collect::<Vec<char>>(), ['b', 'a', 'd', 'c']);
     /// ```
     pub fn append(&mut self, mut other: Self) {
-        if self.is_empty() {
-            self.head = other.head.take();
-        } else {
-            let self_size = self.size();
-            let mut link = self.head
-                .as_mut()
-                .expect("`self.head` should be `Some(_)`");
+        let mut link_opt = &mut self.head;
 
-            for _ in 1..self_size {
-                link = link.next
-                    .as_mut()
-                    .expect("`link.next` should be `Some(_)`");
-            }
-            link.next = other.head.take();
+        while let Some(link) = link_opt {
+            link_opt = &mut link.next;
         }
+        *link_opt = other.head.take();
         self.size += other.size();
     }
 }
