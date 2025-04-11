@@ -176,6 +176,44 @@ mod tests {
     }
 
     #[test]
+    fn iter_empty_list_returns_nothing() {
+        let list: SLList<i32> = SLList { head: None, size: 0 };
+        let mut list_iter = list.iter();
+        assert_eq!(list_iter.next(), None);
+        assert_eq!(list_iter.next(), None);
+    }
+
+    #[test]
+    fn iter_non_empty_list_returns_references_to_contents() {
+        let list = build_test_list();
+        let mut list_iter = list.iter();
+        assert_eq!(list_iter.next(), Some(&0));
+        assert_eq!(list_iter.next(), Some(&1));
+        assert_eq!(list_iter.next(), Some(&2));
+        assert_eq!(list_iter.next(), None);
+        assert_eq!(list_iter.next(), None);
+    }
+
+    #[test]
+    fn iter_mut_empty_list_returns_nothing() {
+        let mut list: SLList<i32> = SLList { head: None, size: 0 };
+        let mut list_iter = list.iter_mut();
+        assert_eq!(list_iter.next(), None);
+        assert_eq!(list_iter.next(), None);
+    }
+
+    #[test]
+    fn iter_mut_non_empty_list_returns_mutable_references_to_contents() {
+        let mut list = build_test_list();
+        let mut list_iter = list.iter_mut();
+        assert_eq!(list_iter.next(), Some(&mut 0));
+        assert_eq!(list_iter.next(), Some(&mut 1));
+        assert_eq!(list_iter.next(), Some(&mut 2));
+        assert_eq!(list_iter.next(), None);
+        assert_eq!(list_iter.next(), None);
+    }
+
+    #[test]
     fn get_size_zero_returns_none() {
         let list: SLList<i32> = SLList { head: None, size: 0 };
         assert_eq!(list.get(0), None);
