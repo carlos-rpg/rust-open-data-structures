@@ -284,7 +284,11 @@ mod tests {
         list.push(1);
         list.push(2);
         list.push(3);
-        assert_eq!(list.into_iter().collect::<Vec<i32>>(), [3, 2, 1, 0]);
+        let mut list_iter = list.iter();
+        assert_eq!(list_iter.next(), Some(&3));
+        assert_eq!(list_iter.next(), Some(&2));
+        assert_eq!(list_iter.next(), Some(&1));
+        assert_eq!(list_iter.next(), Some(&0));
     }
 
     #[test]
@@ -304,8 +308,8 @@ mod tests {
     fn split_empty_list_returns_empty_list() {
         let mut list1: SLList<i32> = SLList { head: None, size: 0 };
         let list2 = list1.split(0).unwrap();
-        assert_eq!(list1.into_iter().collect::<Vec<i32>>(), []);
-        assert_eq!(list2.into_iter().collect::<Vec<i32>>(), []);
+        assert_eq!(list1.iter().next(), None);
+        assert_eq!(list2.iter().next(), None);
     }
 
     #[test]
@@ -320,8 +324,11 @@ mod tests {
     fn split_at_zero_returns_full_original_list() {
         let mut list1 = build_test_list();
         let list2 = list1.split(0).unwrap();
-        assert_eq!(list1.into_iter().collect::<Vec<i32>>(), []);
-        assert_eq!(list2.into_iter().collect::<Vec<i32>>(), [0, 1, 2]);
+        assert_eq!(list1.into_iter().next(), None);
+        let mut list2_iter = list2.iter();
+        assert_eq!(list2_iter.next(), Some(&0));
+        assert_eq!(list2_iter.next(), Some(&1));
+        assert_eq!(list2_iter.next(), Some(&2));
     }
 
     #[test]
@@ -336,8 +343,11 @@ mod tests {
     fn split_at_end_returns_empty_list() {
         let mut list1 = build_test_list();
         let list2 = list1.split(list1.size()).unwrap();
-        assert_eq!(list1.into_iter().collect::<Vec<i32>>(), [0, 1, 2]);
-        assert_eq!(list2.into_iter().collect::<Vec<i32>>(), []);
+        let mut list1_iter = list1.iter();
+        assert_eq!(list1_iter.next(), Some(&0));
+        assert_eq!(list1_iter.next(), Some(&1));
+        assert_eq!(list1_iter.next(), Some(&2));
+        assert_eq!(list2.iter().next(), None);
     }
 
     #[test]
@@ -352,8 +362,11 @@ mod tests {
     fn split_at_mid_returns_partial_list() {
         let mut list1 = build_test_list();
         let list2 = list1.split(1).unwrap();
-        assert_eq!(list1.into_iter().collect::<Vec<i32>>(), [0]);
-        assert_eq!(list2.into_iter().collect::<Vec<i32>>(), [1, 2]);
+        let mut list1_iter = list1.iter();
+        assert_eq!(list1_iter.next(), Some(&0));
+        let mut list2_iter = list2.iter();
+        assert_eq!(list2_iter.next(), Some(&1));
+        assert_eq!(list2_iter.next(), Some(&2));
     }
 
     #[test]
@@ -397,7 +410,10 @@ mod tests {
         let mut list1 = build_test_list();
         let list2 = SLList { head: None, size: 0};
         list1.append(list2);
-        assert_eq!(list1.into_iter().collect::<Vec<i32>>(), [0, 1, 2]);
+        let mut list1_iter = list1.iter();
+        assert_eq!(list1_iter.next(), Some(&0));
+        assert_eq!(list1_iter.next(), Some(&1));
+        assert_eq!(list1_iter.next(), Some(&2));
     }
 
     #[test]
@@ -405,7 +421,10 @@ mod tests {
         let mut list1 = SLList { head: None, size: 0 };
         let list2 = build_test_list();
         list1.append(list2);
-        assert_eq!(list1.into_iter().collect::<Vec<i32>>(), [0, 1, 2]);
+        let mut list1_iter = list1.iter();
+        assert_eq!(list1_iter.next(), Some(&0));
+        assert_eq!(list1_iter.next(), Some(&1));
+        assert_eq!(list1_iter.next(), Some(&2));
     }
 
     #[test]
@@ -413,7 +432,13 @@ mod tests {
         let mut list1 = build_test_list();
         let list2 = build_test_list();
         list1.append(list2);
-        assert_eq!(list1.into_iter().collect::<Vec<i32>>(), [0, 1, 2, 0, 1, 2]);
+        let mut list1_iter = list1.iter();
+        assert_eq!(list1_iter.next(), Some(&0));
+        assert_eq!(list1_iter.next(), Some(&1));
+        assert_eq!(list1_iter.next(), Some(&2));
+        assert_eq!(list1_iter.next(), Some(&0));
+        assert_eq!(list1_iter.next(), Some(&1));
+        assert_eq!(list1_iter.next(), Some(&2));
     }
 
     #[test]
