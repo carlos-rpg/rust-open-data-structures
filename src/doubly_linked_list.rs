@@ -296,8 +296,7 @@ impl<T> Drop for DLList<T> {
 mod tests {
     use super::*;
 
-    #[test]
-    fn pop_head_returns_contents() {
+    fn build_test_list() -> DLList<i32> {
         let l1 = Rc::new(
             RefCell::new(Node { value: 1, next: None, prev: None})
         );
@@ -309,11 +308,12 @@ mod tests {
         );
         l2.borrow_mut().prev = Some(Rc::clone(&l3));
         l1.borrow_mut().prev = Some(Rc::clone(&l2));
-        drop(l2);
+        DLList { head: Some(l3), tail: Some(l1), size: 3 }
+    }
 
-        let mut list = DLList {
-            head: Some(l3), tail: Some(l1), size: 3,
-        };
+    #[test]
+    fn pop_head_returns_contents() {
+        let mut list = build_test_list();
         assert_eq!(list.pop_head(), Some(3));
         assert_eq!(list.pop_head(), Some(2));
         assert_eq!(list.pop_head(), Some(1));
@@ -323,22 +323,7 @@ mod tests {
 
     #[test]
     fn pop_head_keeps_track_of_size() {
-        let l1 = Rc::new(
-            RefCell::new(Node { value: 1, next: None, prev: None})
-        );
-        let l2 = Rc::new(
-            RefCell::new(Node { value: 2, next: Some(Rc::clone(&l1)), prev: None })
-        );
-        let l3 = Rc::new(
-            RefCell::new(Node { value: 3, next: Some(Rc::clone(&l2)), prev: None })
-        );
-        l2.borrow_mut().prev = Some(Rc::clone(&l3));
-        l1.borrow_mut().prev = Some(Rc::clone(&l2));
-        drop(l2);
-
-        let mut list = DLList {
-            head: Some(l3), tail: Some(l1), size: 3,
-        };
+        let mut list = build_test_list();
         assert_eq!(list.size(), 3);
         list.pop_head();
         assert_eq!(list.size(), 2);
@@ -352,22 +337,7 @@ mod tests {
 
     #[test]
     fn pop_tail_returns_contents() {
-        let l1 = Rc::new(
-            RefCell::new(Node { value: 1, next: None, prev: None})
-        );
-        let l2 = Rc::new(
-            RefCell::new(Node { value: 2, next: Some(Rc::clone(&l1)), prev: None })
-        );
-        let l3 = Rc::new(
-            RefCell::new(Node { value: 3, next: Some(Rc::clone(&l2)), prev: None })
-        );
-        l2.borrow_mut().prev = Some(Rc::clone(&l3));
-        l1.borrow_mut().prev = Some(Rc::clone(&l2));
-        drop(l2);
-
-        let mut list = DLList {
-            head: Some(l3), tail: Some(l1), size: 3,
-        };
+        let mut list = build_test_list();
         assert_eq!(list.pop_tail(), Some(1));
         assert_eq!(list.pop_tail(), Some(2));
         assert_eq!(list.pop_tail(), Some(3));
@@ -377,22 +347,7 @@ mod tests {
 
     #[test]
     fn pop_tail_keeps_track_of_size() {
-        let l1 = Rc::new(
-            RefCell::new(Node { value: 1, next: None, prev: None})
-        );
-        let l2 = Rc::new(
-            RefCell::new(Node { value: 2, next: Some(Rc::clone(&l1)), prev: None })
-        );
-        let l3 = Rc::new(
-            RefCell::new(Node { value: 3, next: Some(Rc::clone(&l2)), prev: None })
-        );
-        l2.borrow_mut().prev = Some(Rc::clone(&l3));
-        l1.borrow_mut().prev = Some(Rc::clone(&l2));
-        drop(l2);
-
-        let mut list = DLList {
-            head: Some(l3), tail: Some(l1), size: 3,
-        };
+        let mut list = build_test_list();
         assert_eq!(list.size(), 3);
         list.pop_tail();
         assert_eq!(list.size(), 2);
