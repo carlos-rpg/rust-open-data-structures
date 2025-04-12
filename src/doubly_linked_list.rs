@@ -398,4 +398,60 @@ mod tests {
         list.push_tail('c');
         assert_eq!(list.size(), 3);
     }
+
+    #[test]
+    fn get_head_empty_list_returns_none() {
+        let list: DLList<i32> = DLList { head: None, tail: None, size: 0 };
+        assert!(list.get_head().is_none());
+    }
+
+    #[test]
+    fn get_head_non_empty_list_returns_reference() {
+        let list: DLList<i32> = build_test_list();
+        let head_ptr = list.get_head().unwrap();
+        assert_eq!(*head_ptr, 3);
+    }
+
+    #[test]
+    fn get_tail_empty_list_returns_none() {
+        let list: DLList<i32> = DLList { head: None, tail: None, size: 0 };
+        assert!(list.get_tail().is_none());
+    }
+
+    #[test]
+    fn get_tail_non_empty_list_returns_reference() {
+        let list: DLList<i32> = build_test_list();
+        let tail_ptr = list.get_tail().unwrap();
+        assert_eq!(*tail_ptr, 1);
+    }
+
+    #[test]
+    fn get_mut_head_empty_list_returns_none() {
+        let list: DLList<i32> = DLList { head: None, tail: None, size: 0 };
+        assert!(list.get_mut_head().is_none());
+    }
+
+    #[test]
+    fn get_mut_head_non_empty_list_returns_mutable_reference() {
+        let list: DLList<i32> = build_test_list();
+        let mut mut_head_ptr = list.get_mut_head().unwrap();
+        assert_eq!(*mut_head_ptr, 3);
+        *mut_head_ptr = 30;
+        assert_eq!(*mut_head_ptr, 30);
+    }
+
+    #[test]
+    fn get_mut_tail_empty_list_returns_none() {
+        let list: DLList<i32> = DLList { head: None, tail: None, size: 0 };
+        assert!(list.get_mut_tail().is_none());
+    }
+
+    #[test]
+    fn get_mut_tail_non_empty_list_returns_mutable_reference() {
+        let list: DLList<i32> = build_test_list();
+        let mut mut_tail_ptr = list.get_mut_tail().unwrap();
+        assert_eq!(*mut_tail_ptr, 1);
+        *mut_tail_ptr = 10;
+        assert_eq!(*mut_tail_ptr, 10);
+    }
 }
