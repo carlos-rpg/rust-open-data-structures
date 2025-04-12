@@ -61,7 +61,7 @@ impl<T> SLList<T> {
     /// assert!(list.is_empty());
     /// ```
     pub fn is_empty(&self) -> bool {
-        self.size() == 0
+        self.head.is_none()
     }
 
     /// Returns a shared reference to the value at the given position.

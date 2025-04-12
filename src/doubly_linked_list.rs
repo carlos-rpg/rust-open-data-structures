@@ -66,6 +66,19 @@ impl<T> DLList<T> {
         self.size
     }
 
+    /// Returns `true` if the list has no elements, `false` otherwise.
+    /// 
+    /// # Examples
+    /// 
+    /// ```
+    /// # use ods::doubly_linked_list::DLList;
+    /// let list: DLList<i32> = DLList::new();
+    /// assert!(list.is_empty());
+    /// ```
+    pub fn is_empty(&self) -> bool {
+        self.head.is_none() && self.tail.is_none()
+    }
+
     /// Inserts an element as the new head of the list.
     /// 
     /// # Examples
