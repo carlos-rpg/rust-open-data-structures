@@ -10,7 +10,7 @@
 //! implementation but keeps the disadvantages of the dummy node. This implementation 
 //! is therefore linear.
 
-use std::cell::{RefCell, Ref};
+use std::cell::{RefCell, Ref, RefMut};
 use std::rc::Rc;
 
 type Link<T> = Rc<RefCell<Node<T>>>;
@@ -208,6 +208,46 @@ impl<T> DLList<T> {
     pub fn get_tail(&self) -> Option<Ref<T>> {
         let ref_node = self.tail.as_ref()?.borrow();
         Some(Ref::map(ref_node, |node| &node.value))
+    }
+
+    /// Returns a mutable reference to the head of the list.
+    /// 
+    /// Returns None if the list is empty.
+    /// 
+    /// # Examples
+    /// 
+    /// ```
+    /// # use ods::doubly_linked_list::DLList;
+    /// let mut list = DLList::new();
+    /// list.push_head('g');
+    /// let mut mut_head_ref = list.get_mut_head().unwrap();
+    /// assert_eq!(*mut_head_ref, 'g');
+    /// *mut_head_ref = 'x';
+    /// assert_eq!(*mut_head_ref, 'x');
+    /// ```
+    pub fn get_mut_head(&self) -> Option<RefMut<T>> {
+        let ref_node = self.head.as_ref()?.borrow_mut();
+        Some(RefMut::map(ref_node, |node| &mut node.value))
+    }
+
+    /// Returns a mutable reference to the tail of the list.
+    /// 
+    /// Returns None if the list is empty.
+    /// 
+    /// # Examples
+    /// 
+    /// ```
+    /// # use ods::doubly_linked_list::DLList;
+    /// let mut list = DLList::new();
+    /// list.push_tail('g');
+    /// let mut mut_tail_ref = list.get_mut_tail().unwrap();
+    /// assert_eq!(*mut_tail_ref, 'g');
+    /// *mut_tail_ref = 'x';
+    /// assert_eq!(*mut_tail_ref, 'x');
+    /// ```
+    pub fn get_mut_tail(&self) -> Option<RefMut<T>> {
+        let ref_node = self.tail.as_ref()?.borrow_mut();
+        Some(RefMut::map(ref_node, |node| &mut node.value))
     }
 }
 
