@@ -1,6 +1,7 @@
 use ods::singly_linked_list::SLList;
 use ods::doubly_linked_list::DLList;
 
+
 #[test]
 fn singly_linked_list() {
     let mut list1 = SLList::new();
@@ -32,6 +33,7 @@ fn singly_linked_list() {
     assert_eq!(list3.into_iter().collect::<Vec<char>>(), ['a', 'y', 't']);
 }
 
+
 #[test]
 fn doubly_linked_list() {
     let mut list1 = DLList::new();
@@ -52,6 +54,8 @@ fn doubly_linked_list() {
     list2.push_head(0);
     assert_eq!(*list2.get_tail().unwrap(), -3);
 
-    assert_eq!(list1.into_iter().collect::<Vec<i32>>(), [3, 2, 1, 0]);
-    assert_eq!(list2.into_iter().rev().collect::<Vec<i32>>(), [-3, -2, -1, 0]);
+    *list1.get_mut_head().unwrap() = 30;
+    *list2.get_mut_tail().unwrap() = -30;
+    assert_eq!(list1.into_iter().collect::<Vec<i32>>(), [30, 2, 1, 0]);
+    assert_eq!(list2.into_iter().rev().collect::<Vec<i32>>(), [-30, -2, -1, 0]);
 }
