@@ -75,20 +75,19 @@ impl<T> SLList<T> {
     /// assert_eq!(list.get(0), Some(&'a'));
     /// ```
     pub fn get(&self, at: usize) -> Option<&T> {
-        if at < self.size() {
-            let mut node = self.head
+        if at >= self.size() {
+            return None;
+        }
+        let mut node = self.head
+            .as_deref()
+            .expect("`at` should be < than `self.size()`"); 
+
+        for _ in 0..at {
+            node = node.next
                 .as_deref()
                 .expect("`at` should be < than `self.size()`"); 
-
-            for _ in 0..at {
-                node = node.next
-                    .as_deref()
-                    .expect("`at` should be < than `self.size()`"); 
-            }
-            Some(&node.value)
-        } else {
-            None
         }
+        Some(&node.value)
     }
 
     /// Returns a mutable reference to the value at the given position. Returns 
@@ -106,20 +105,19 @@ impl<T> SLList<T> {
     /// assert_eq!(*mutable, 'x');
     /// ```
     pub fn get_mut(&mut self, at: usize) -> Option<&mut T> {
-        if at < self.size() {
-            let mut node = self.head
+        if at >= self.size() {
+            return None;
+        }
+        let mut node = self.head
+            .as_deref_mut()
+            .expect("`at` should be < than `self.size()`");
+
+        for _ in 0..at {
+            node = node.next
                 .as_deref_mut()
                 .expect("`at` should be < than `self.size()`");
-
-            for _ in 0..at {
-                node = node.next
-                    .as_deref_mut()
-                    .expect("`at` should be < than `self.size()`");
-            }
-            Some(&mut node.value)
-        } else {
-            None
         }
+        Some(&mut node.value)
     }
 
     /// Inserts a value as the new head of the list.
@@ -203,24 +201,22 @@ impl<T> SLList<T> {
     /// assert_eq!(list2.into_iter().collect::<Vec<char>>(), ['b', 'a']);
     /// ```
     pub fn split(&mut self, at: usize) -> Option<Self> {
-        if at <= self.size() {
-            let mut node_opt = &mut self.head;
-
-            for _ in 0..at {
-                node_opt = &mut node_opt
-                    .as_mut()
-                    .expect("`at` should be <= than `self.size()`")
-                    .next;
-            }
-            let other = Self { 
-                head: node_opt.take(),
-                size: self.size() - at,
-            };
-            self.size = at;
-            Some(other)
-        } else {
-            None
+        if at > self.size() {
+            return None;
         }
+        let mut node_opt = &mut self.head;
+        for _ in 0..at {
+            node_opt = &mut node_opt
+                .as_mut()
+                .expect("`at` should be <= than `self.size()`")
+                .next;
+        }
+        let other = Self { 
+            head: node_opt.take(),
+            size: self.size() - at,
+        };
+        self.size = at;
+        Some(other)
     }
     
     /// Appends `other` to the end of `self`.
