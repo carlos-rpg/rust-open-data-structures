@@ -10,3 +10,5 @@ pub mod doubly_linked_list;
 pub mod hashers;
 pub mod chained_hash_table;
 pub mod linear_hash_table;
+
+pub mod binary_tree;
