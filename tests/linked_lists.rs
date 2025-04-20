@@ -19,7 +19,7 @@ fn singly_linked_list() {
     let list2_ref = list2.get_mut(2);
     assert!(list2_ref.is_some());
     *list2_ref.unwrap() = 't';
-    assert_eq!(list2.iter().collect::<Vec<&char>>(), [&mut 'z', &mut 'y', &mut 't']);
+    assert_eq!(list2.iter_mut().collect::<Vec<&mut char>>(), [&mut 'z', &mut 'y', &mut 't']);
 
     assert_eq!(list1.pop(), Some('c'));
     assert_eq!(list2.pop(), Some('z'));
