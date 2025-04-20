@@ -39,7 +39,7 @@ impl BinaryTree {
         self.root.get().is_none()
     }
 
-    pub fn push(&self, loc: String) -> &Link {
+    pub fn push(&self, loc: String) -> &Node {
         let mut link = &self.root;
         for ch in loc.chars() {
             let node = link.get().expect("Branch cell should be initialized");
@@ -56,43 +56,41 @@ impl BinaryTree {
             Node::new(loc, link)
         };
         link.set(node).expect("Leaf cell should be uninitialized");
-        link
+        link.get().unwrap()
     }
 
-    pub fn depth_recursive(link: &Link) -> usize {
-        let node = link
-            .get()
-            .expect("`link` node should always be initialized");
-
+    pub fn depth_recursive(node: &Node) -> usize {
         match node.parent.upgrade() {
             None => 0,
-            Some(parent_link) => 1 + Self::depth_recursive(&parent_link),
+            Some(link) => {
+                let parent_node = link.get().unwrap();
+                1 + Self::depth_recursive(parent_node)
+            },
         }
     }
 
-    pub fn depth_iterative(link: &Link) -> usize {
+    pub fn depth_iterative(node: &Node) -> usize {
         let mut depth = 0;
-        let mut link_rc = Rc::clone(link);
-        let mut node = link_rc
-            .get()
-            .expect("`link` node should always be initialized");
+        let mut link_parent = node.parent.upgrade();
 
-        while let Some(link_parent) = node.parent.upgrade() {
+        while let Some(link) = link_parent {
+            link_parent = link.get()
+                .expect("Parent node should be initialized")
+                .parent
+                .upgrade();
+
             depth += 1;
-            link_rc = Rc::clone(&link_parent);
-            node = link_rc
-                .get()
-                .expect("`link` node should always be initialized");
         }
         depth
     }
-
-    pub fn size_recursive(link: &Link) -> usize {
-        match link.get() {
-            None => 0,
-            Some(node) => 1 + 
-                Self::size_recursive(&node.left) + 
-                Self::size_recursive(&node.right),
+    pub fn size_recursive(node: &Node) -> usize {
+        match (node.left.get(), node.right.get()) {
+            (None, None) => 0,
+            (None, Some(r)) => 1 + Self::size_recursive(r),
+            (Some(l), None) => 1 + Self::size_recursive(l),
+            (Some(l), Some(r)) => 2 + 
+                Self::size_recursive(l) +
+                Self::size_recursive(r),
         }
     }
 
@@ -100,12 +98,14 @@ impl BinaryTree {
         unimplemented!()
     }
 
-    pub fn height_recursive(link: &Link) -> usize {
-        match link.get() {
-            None => 0,
-            Some(node) => 1 + usize::max(
-                Self::height_recursive(&node.left), 
-                Self::height_recursive(&node.right)
+    pub fn height_recursive(node: &Node) -> usize {
+        match (node.left.get(), node.right.get()) {
+            (None, None) => 0,
+            (None, Some(right)) => 1 + Self::height_recursive(right),
+            (Some(left), None) => 1 + Self::height_recursive(left),
+            (Some(left), Some(right)) => 1 + usize::max(
+                Self::height_recursive(left),
+                Self::height_recursive(right),
             ),
         }
     }
