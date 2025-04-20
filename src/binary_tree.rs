@@ -90,7 +90,23 @@ impl BinaryTree {
     pub fn size_recursive(link: &Link) -> usize {
         match link.get() {
             None => 0,
-            Some(node) => 1 + Self::size_recursive(&node.left) + Self::size_recursive(&node.right),
+            Some(node) => 1 + 
+                Self::size_recursive(&node.left) + 
+                Self::size_recursive(&node.right),
+        }
+    }
+
+    pub fn size_iterative(link: &Link) -> usize {
+        unimplemented!()
+    }
+
+    pub fn height_recursive(link: &Link) -> usize {
+        match link.get() {
+            None => 0,
+            Some(node) => 1 + usize::max(
+                Self::height_recursive(&node.left), 
+                Self::height_recursive(&node.right)
+            ),
         }
     }
 }
@@ -222,5 +238,21 @@ mod tests {
         assert_eq!(BinaryTree::size_recursive(l), 1);
         assert_eq!(BinaryTree::size_recursive(rl), 2);
         assert_eq!(BinaryTree::size_recursive(rlr), 1);
+    }
+
+    #[test]
+    fn height_recursive_non_empty_returns() {
+        let (_, nodes) = build_test_tree();
+        let root = nodes.get("").unwrap();
+        let r = nodes.get("R").unwrap();
+        let l = nodes.get("L").unwrap();
+        let rl = nodes.get("RL").unwrap();
+        let rlr = nodes.get("RLR").unwrap();
+
+        assert_eq!(BinaryTree::height_recursive(root), 4);
+        assert_eq!(BinaryTree::height_recursive(r), 3);
+        assert_eq!(BinaryTree::height_recursive(l), 1);
+        assert_eq!(BinaryTree::height_recursive(rl), 2);
+        assert_eq!(BinaryTree::height_recursive(rlr), 1);
     }
 }
