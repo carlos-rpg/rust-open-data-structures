@@ -27,6 +27,10 @@ impl Node {
             right: Rc::new(OnceCell::new()),
         }
     }
+
+    pub fn location(&self) -> &str {
+        &self.loc
+    }
 }
 
 
@@ -83,6 +87,7 @@ impl BinaryTree {
         }
         depth
     }
+
     pub fn size_recursive(node: &Node) -> usize {
         match (node.left.get(), node.right.get()) {
             (None, None) => 0,
@@ -94,8 +99,8 @@ impl BinaryTree {
         }
     }
 
-    pub fn size_iterative(link: &Link) -> usize {
-        unimplemented!()
+    pub fn size_iterative(_node: &Node) -> usize {
+        unimplemented!();
     }
 
     pub fn height_recursive(node: &Node) -> usize {
@@ -108,6 +113,10 @@ impl BinaryTree {
                 Self::height_recursive(right),
             ),
         }
+    }
+
+    pub fn height_iterative(_node: &Node) -> usize {
+        unimplemented!();
     }
 }
 
