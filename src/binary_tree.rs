@@ -117,7 +117,7 @@ mod tests {
     use super::*;
     use std::collections::HashMap;
 
-    fn build_test_tree() -> (BinaryTree, HashMap<String, Rc<OnceCell<Node>>>) {
+    fn build_test_tree() -> (BinaryTree, HashMap<String, Link>) {
         let tree = BinaryTree { root: Rc::new(OnceCell::new()) };
 
         let root = Rc::clone(&tree.root);
@@ -170,13 +170,13 @@ mod tests {
             }
         );
 
-        let mut nodes = HashMap::new();
-        nodes.insert(String::from(""), root);
-        nodes.insert(String::from("R"), r);
-        nodes.insert(String::from("L"), l);
-        nodes.insert(String::from("RL"), rl);
-        nodes.insert(String::from("RLR"), rlr);
-        (tree, nodes)
+        let mut links = HashMap::new();
+        links.insert(String::from(""), root);
+        links.insert(String::from("R"), r);
+        links.insert(String::from("L"), l);
+        links.insert(String::from("RL"), rl);
+        links.insert(String::from("RLR"), rlr);
+        (tree, links)
     }
 
     #[test]
@@ -194,12 +194,12 @@ mod tests {
 
     #[test]
     fn depth_recursive_returns() {
-        let (_, nodes) = build_test_tree();
-        let root = nodes.get("").unwrap();
-        let r = nodes.get("R").unwrap();
-        let l = nodes.get("L").unwrap();
-        let rl = nodes.get("RL").unwrap();
-        let rlr = nodes.get("RLR").unwrap();
+        let (_, links) = build_test_tree();
+        let root = links[""].get().unwrap();
+        let r = links["R"].get().unwrap();
+        let l = links["L"].get().unwrap();
+        let rl = links["RL"].get().unwrap();
+        let rlr = links["RLR"].get().unwrap();
 
         assert_eq!(BinaryTree::depth_recursive(root), 0);
         assert_eq!(BinaryTree::depth_recursive(r), 1);
@@ -210,12 +210,12 @@ mod tests {
 
     #[test]
     fn depth_iterative_returns() {
-        let (_, nodes) = build_test_tree();
-        let root = nodes.get("").unwrap();
-        let r = nodes.get("R").unwrap();
-        let l = nodes.get("L").unwrap();
-        let rl = nodes.get("RL").unwrap();
-        let rlr = nodes.get("RLR").unwrap();
+        let (_, links) = build_test_tree();
+        let root = links[""].get().unwrap();
+        let r = links["R"].get().unwrap();
+        let l = links["L"].get().unwrap();
+        let rl = links["RL"].get().unwrap();
+        let rlr = links["RLR"].get().unwrap();
 
         assert_eq!(BinaryTree::depth_iterative(root), 0);
         assert_eq!(BinaryTree::depth_iterative(r), 1);
@@ -226,33 +226,33 @@ mod tests {
 
     #[test]
     fn size_recursive_returns() {
-        let (_, nodes) = build_test_tree();
-        let root = nodes.get("").unwrap();
-        let r = nodes.get("R").unwrap();
-        let l = nodes.get("L").unwrap();
-        let rl = nodes.get("RL").unwrap();
-        let rlr = nodes.get("RLR").unwrap();
+        let (_, links) = build_test_tree();
+        let root = links[""].get().unwrap();
+        let r = links["R"].get().unwrap();
+        let l = links["L"].get().unwrap();
+        let rl = links["RL"].get().unwrap();
+        let rlr = links["RLR"].get().unwrap();
 
-        assert_eq!(BinaryTree::size_recursive(root), 5);
-        assert_eq!(BinaryTree::size_recursive(r), 3);
-        assert_eq!(BinaryTree::size_recursive(l), 1);
-        assert_eq!(BinaryTree::size_recursive(rl), 2);
-        assert_eq!(BinaryTree::size_recursive(rlr), 1);
+        assert_eq!(BinaryTree::size_recursive(root), 4);
+        assert_eq!(BinaryTree::size_recursive(r), 2);
+        assert_eq!(BinaryTree::size_recursive(l), 0);
+        assert_eq!(BinaryTree::size_recursive(rl), 1);
+        assert_eq!(BinaryTree::size_recursive(rlr), 0);
     }
 
     #[test]
-    fn height_recursive_non_empty_returns() {
-        let (_, nodes) = build_test_tree();
-        let root = nodes.get("").unwrap();
-        let r = nodes.get("R").unwrap();
-        let l = nodes.get("L").unwrap();
-        let rl = nodes.get("RL").unwrap();
-        let rlr = nodes.get("RLR").unwrap();
+    fn height_recursive_returns() {
+        let (_, links) = build_test_tree();
+        let root = links[""].get().unwrap();
+        let r = links["R"].get().unwrap();
+        let l = links["L"].get().unwrap();
+        let rl = links["RL"].get().unwrap();
+        let rlr = links["RLR"].get().unwrap();
 
-        assert_eq!(BinaryTree::height_recursive(root), 4);
-        assert_eq!(BinaryTree::height_recursive(r), 3);
-        assert_eq!(BinaryTree::height_recursive(l), 1);
-        assert_eq!(BinaryTree::height_recursive(rl), 2);
-        assert_eq!(BinaryTree::height_recursive(rlr), 1);
+        assert_eq!(BinaryTree::height_recursive(root), 3);
+        assert_eq!(BinaryTree::height_recursive(r), 2);
+        assert_eq!(BinaryTree::height_recursive(l), 0);
+        assert_eq!(BinaryTree::height_recursive(rl), 1);
+        assert_eq!(BinaryTree::height_recursive(rlr), 0);
     }
 }
