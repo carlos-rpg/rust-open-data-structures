@@ -1,122 +1,58 @@
 use std::rc::{Rc, Weak};
-use std::cell::OnceCell;
+use std::cell::RefCell;
 
-type Link = Rc<OnceCell<Node>>;
-type WeakLink = Weak<OnceCell<Node>>;
-
-#[derive(Debug)]
-pub struct BinaryTree {
-    root: Link,
-}
+type Link<T> = Rc<RefCell<Node<T>>>;
+type WeakLink<T> = Weak<RefCell<Node<T>>>;
 
 
 #[derive(Debug)]
-pub struct Node {
-    loc: String,
-    parent: WeakLink,
-    left: Link,
-    right: Link,
+pub struct Node<T> {
+    value: T,
+    parent: Option<WeakLink<T>>,
+    left: Option<Link<T>>,
+    right: Option<Link<T>>,
 }
 
-impl Node {
-    fn new(loc: String, parent: &Link) -> Node {
-        Self { 
-            loc,
-            parent: Rc::downgrade(parent),
-            left: Rc::new(OnceCell::new()),
-            right: Rc::new(OnceCell::new()),
-        }
+impl<T> Node<T> {
+    pub fn new(value: T) -> Link<T> {
+        Rc::new(RefCell::new(
+            Self { value, parent: None, left: None, right: None }
+        ))
     }
 
-    pub fn location(&self) -> &str {
-        &self.loc
-    }
-}
-
-
-impl BinaryTree {
-    pub fn new() -> Self {
-        Self { root: Rc::new(OnceCell::new()) }
-    }
-
-    pub fn is_empty(&self) -> bool {
-        self.root.get().is_none()
-    }
-
-    pub fn push(&self, loc: String) -> &Node {
-        let mut link = &self.root;
-        for ch in loc.chars() {
-            let node = link.get().expect("Branch cell should be initialized");
-
-            link = match ch {
-                'L' => &node.left,
-                'R' => &node.right,
-                _ => panic!("char {} in `loc` must be 'L' or 'R'", ch),
-            };
-        };
-        let node = if loc.is_empty() {
-            Node::new(loc, &Rc::new(OnceCell::new()))
-        } else {
-            Node::new(loc, link)
-        };
-        link.set(node).expect("Leaf cell should be uninitialized");
-        link.get().unwrap()
-    }
-
-    pub fn depth_recursive(node: &Node) -> usize {
-        match node.parent.upgrade() {
-            None => 0,
-            Some(link) => {
-                let parent_node = link.get().unwrap();
-                1 + Self::depth_recursive(parent_node)
-            },
-        }
-    }
-
-    pub fn depth_iterative(node: &Node) -> usize {
+    pub fn depth(link: &Link<T>) -> usize {
         let mut depth = 0;
-        let mut link_parent = node.parent.upgrade();
+        let mut link_opt = link.borrow().parent.clone();
 
-        while let Some(link) = link_parent {
-            link_parent = link.get()
-                .expect("Parent node should be initialized")
-                .parent
-                .upgrade();
-
+        while let Some(weak_link) = link_opt {
             depth += 1;
+            let link = weak_link.upgrade().unwrap();
+            link_opt = link.borrow().parent.clone();
         }
         depth
     }
 
-    pub fn size_recursive(node: &Node) -> usize {
-        match (node.left.get(), node.right.get()) {
-            (None, None) => 0,
-            (None, Some(r)) => 1 + Self::size_recursive(r),
-            (Some(l), None) => 1 + Self::size_recursive(l),
-            (Some(l), Some(r)) => 2 + 
-                Self::size_recursive(l) +
-                Self::size_recursive(r),
+    pub fn size(link: &Link<T>) -> usize {
+        let mut size = 0;
+        let mut links = vec![Rc::clone(link)];
+        let mut link;
+
+        while links.len() > 0 {
+            size += 1;
+            link = links.remove(0);
+
+            if let Some(left_link) = &link.borrow().left {
+                links.push(Rc::clone(left_link));
+            }
+            if let Some(right_link) = &link.borrow().right {
+                links.push(Rc::clone(right_link));
+            }
         }
+        size
     }
 
-    pub fn size_iterative(_node: &Node) -> usize {
-        unimplemented!();
-    }
-
-    pub fn height_recursive(node: &Node) -> usize {
-        match (node.left.get(), node.right.get()) {
-            (None, None) => 0,
-            (None, Some(right)) => 1 + Self::height_recursive(right),
-            (Some(left), None) => 1 + Self::height_recursive(left),
-            (Some(left), Some(right)) => 1 + usize::max(
-                Self::height_recursive(left),
-                Self::height_recursive(right),
-            ),
-        }
-    }
-
-    pub fn height_iterative(_node: &Node) -> usize {
-        unimplemented!();
+    pub fn height(link: &Link<T>) -> usize {
+        unimplemented!()
     }
 }
 
@@ -126,142 +62,59 @@ mod tests {
     use super::*;
     use std::collections::HashMap;
 
-    fn build_test_tree() -> (BinaryTree, HashMap<String, Link>) {
-        let tree = BinaryTree { root: Rc::new(OnceCell::new()) };
+    fn build_test_tree() -> HashMap<String, Link<i32>> {
+        let root = Node::new(0);
+        let l = Node::new(1);
+        let r = Node::new(2);
+        let rl = Node::new(3);
+        let rll = Node::new(4);
+        let rlr = Node::new(5);
 
-        let root = Rc::clone(&tree.root);
-        let _ = root.set(
-            Node { 
-                loc: String::from(""),
-                parent: Rc::downgrade(&Rc::new(OnceCell::new())),
-                left: Rc::new(OnceCell::new()),
-                right: Rc::new(OnceCell::new()),
-            }
-        );
+        root.borrow_mut().left.replace(Rc::clone(&l));
+        root.borrow_mut().right.replace(Rc::clone(&r));
 
-        let r = Rc::clone(&root.get().unwrap().right);
-        let _ = r.set(
-            Node { 
-                loc: String::from("R"),
-                parent: Rc::downgrade(&root),
-                left: Rc::new(OnceCell::new()),
-                right: Rc::new(OnceCell::new()),
-            }
-        );
+        l.borrow_mut().parent.replace(Rc::downgrade(&root));
 
-        let l = Rc::clone(&root.get().unwrap().left);
-        let _ = l.set(
-            Node { 
-                loc: String::from("L"),
-                parent: Rc::downgrade(&root),
-                left: Rc::new(OnceCell::new()),
-                right: Rc::new(OnceCell::new()),
-            }
-        );
+        r.borrow_mut().parent.replace(Rc::downgrade(&root));
+        r.borrow_mut().left.replace(Rc::clone(&rl));
 
-        let rl = Rc::clone(&r.get().unwrap().left);
-        let _ = rl.set(
-            Node { 
-                loc: String::from("RL"),
-                parent: Rc::downgrade(&r),
-                left: Rc::new(OnceCell::new()),
-                right: Rc::new(OnceCell::new()),
-            }
-        );
+        rl.borrow_mut().parent.replace(Rc::downgrade(&r));
+        rl.borrow_mut().left.replace(Rc::clone(&rll));
+        rl.borrow_mut().right.replace(Rc::clone(&rlr));
 
-        let rlr = Rc::clone(&rl.get().unwrap().right);
-        let _ = rlr.set(
-            Node { 
-                loc: String::from("RLR"),
-                parent: Rc::downgrade(&rl),
-                left: Rc::new(OnceCell::new()),
-                right: Rc::new(OnceCell::new()),
-            }
-        );
+        rll.borrow_mut().parent.replace(Rc::downgrade(&rl));
+        rlr.borrow_mut().parent.replace(Rc::downgrade(&rl));
 
         let mut links = HashMap::new();
         links.insert(String::from(""), root);
         links.insert(String::from("R"), r);
         links.insert(String::from("L"), l);
         links.insert(String::from("RL"), rl);
+        links.insert(String::from("RLL"), rll);
         links.insert(String::from("RLR"), rlr);
-        (tree, links)
+
+        links
     }
 
     #[test]
-    fn new_trees_have_no_root() {
-        let tree = BinaryTree::new();
-        assert!(tree.root.get().is_none());
+    fn depth_returns() {
+        let links = build_test_tree();
+        assert_eq!(Node::depth(&links[""]), 0);
+        assert_eq!(Node::depth(&links["R"]), 1);
+        assert_eq!(Node::depth(&links["L"]), 1);
+        assert_eq!(Node::depth(&links["RL"]), 2);
+        assert_eq!(Node::depth(&links["RLL"]), 3);
+        assert_eq!(Node::depth(&links["RLR"]), 3);
     }
 
     #[test]
-    fn push_empty_tree_adds_root() {
-        let tree = BinaryTree { root: Rc::new(OnceCell::new()) };
-        tree.push(String::new());
-        assert!(tree.root.get().is_some());
-    }
-
-    #[test]
-    fn depth_recursive_returns() {
-        let (_, links) = build_test_tree();
-        let root = links[""].get().unwrap();
-        let r = links["R"].get().unwrap();
-        let l = links["L"].get().unwrap();
-        let rl = links["RL"].get().unwrap();
-        let rlr = links["RLR"].get().unwrap();
-
-        assert_eq!(BinaryTree::depth_recursive(root), 0);
-        assert_eq!(BinaryTree::depth_recursive(r), 1);
-        assert_eq!(BinaryTree::depth_recursive(l), 1);
-        assert_eq!(BinaryTree::depth_recursive(rl), 2);
-        assert_eq!(BinaryTree::depth_recursive(rlr), 3);
-    }
-
-    #[test]
-    fn depth_iterative_returns() {
-        let (_, links) = build_test_tree();
-        let root = links[""].get().unwrap();
-        let r = links["R"].get().unwrap();
-        let l = links["L"].get().unwrap();
-        let rl = links["RL"].get().unwrap();
-        let rlr = links["RLR"].get().unwrap();
-
-        assert_eq!(BinaryTree::depth_iterative(root), 0);
-        assert_eq!(BinaryTree::depth_iterative(r), 1);
-        assert_eq!(BinaryTree::depth_iterative(l), 1);
-        assert_eq!(BinaryTree::depth_iterative(rl), 2);
-        assert_eq!(BinaryTree::depth_iterative(rlr), 3);
-    }
-
-    #[test]
-    fn size_recursive_returns() {
-        let (_, links) = build_test_tree();
-        let root = links[""].get().unwrap();
-        let r = links["R"].get().unwrap();
-        let l = links["L"].get().unwrap();
-        let rl = links["RL"].get().unwrap();
-        let rlr = links["RLR"].get().unwrap();
-
-        assert_eq!(BinaryTree::size_recursive(root), 4);
-        assert_eq!(BinaryTree::size_recursive(r), 2);
-        assert_eq!(BinaryTree::size_recursive(l), 0);
-        assert_eq!(BinaryTree::size_recursive(rl), 1);
-        assert_eq!(BinaryTree::size_recursive(rlr), 0);
-    }
-
-    #[test]
-    fn height_recursive_returns() {
-        let (_, links) = build_test_tree();
-        let root = links[""].get().unwrap();
-        let r = links["R"].get().unwrap();
-        let l = links["L"].get().unwrap();
-        let rl = links["RL"].get().unwrap();
-        let rlr = links["RLR"].get().unwrap();
-
-        assert_eq!(BinaryTree::height_recursive(root), 3);
-        assert_eq!(BinaryTree::height_recursive(r), 2);
-        assert_eq!(BinaryTree::height_recursive(l), 0);
-        assert_eq!(BinaryTree::height_recursive(rl), 1);
-        assert_eq!(BinaryTree::height_recursive(rlr), 0);
+    fn size_returns() {
+        let links = build_test_tree();
+        assert_eq!(Node::size(&links[""]), 6);
+        assert_eq!(Node::size(&links["L"]), 1);
+        assert_eq!(Node::size(&links["R"]), 4);
+        assert_eq!(Node::size(&links["RL"]), 3);
+        assert_eq!(Node::size(&links["RLL"]), 1);
+        assert_eq!(Node::size(&links["RLR"]), 1);
     }
 }
