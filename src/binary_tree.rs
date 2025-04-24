@@ -5,7 +5,6 @@ type Link<T> = Rc<RefCell<Node<T>>>;
 type WeakLink<T> = Weak<RefCell<Node<T>>>;
 
 
-#[derive(Debug)]
 pub struct Node<T> {
     value: T,
     parent: Option<WeakLink<T>>,
@@ -35,24 +34,23 @@ impl<T> Node<T> {
     pub fn size(link: &Link<T>) -> usize {
         let mut size = 0;
         let mut links = vec![Rc::clone(link)];
-        let mut link;
 
         while links.len() > 0 {
             size += 1;
-            link = links.remove(0);
+            let link = links.remove(0);
 
             if let Some(left_link) = &link.borrow().left {
                 links.push(Rc::clone(left_link));
             }
             if let Some(right_link) = &link.borrow().right {
                 links.push(Rc::clone(right_link));
-            }
+            };
         }
         size
     }
 
-    pub fn height(link: &Link<T>) -> usize {
-        unimplemented!()
+    pub fn height(_link: &Link<T>) -> usize {
+        unimplemented!();
     }
 }
 
