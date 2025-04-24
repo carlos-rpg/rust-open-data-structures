@@ -7,7 +7,7 @@ type WeakLink<T> = Weak<RefCell<Node<T>>>;
 
 pub struct Node<T> {
     value: T,
-    parent: Option<WeakLink<T>>,
+    parent: WeakLink<T>,
     left: Option<Link<T>>,
     right: Option<Link<T>>,
 }
@@ -15,18 +15,17 @@ pub struct Node<T> {
 impl<T> Node<T> {
     pub fn new(value: T) -> Link<T> {
         Rc::new(RefCell::new(
-            Self { value, parent: None, left: None, right: None }
+            Self { value, parent: Weak::new(), left: None, right: None }
         ))
     }
 
     pub fn depth(link: &Link<T>) -> usize {
         let mut depth = 0;
-        let mut link_opt = link.borrow().parent.clone();
+        let mut link_opt = link.borrow().parent.upgrade();
 
-        while let Some(weak_link) = link_opt {
+        while let Some(link) = link_opt {
             depth += 1;
-            let link = weak_link.upgrade().unwrap();
-            link_opt = link.borrow().parent.clone();
+            link_opt = link.borrow().parent.upgrade();
         }
         depth
     }
@@ -35,7 +34,7 @@ impl<T> Node<T> {
         let mut size = 0;
         let mut links = vec![Rc::clone(link)];
 
-        while links.len() > 0 {
+        while !links.is_empty() {
             size += 1;
             let link = links.remove(0);
 
@@ -44,7 +43,7 @@ impl<T> Node<T> {
             }
             if let Some(right_link) = &link.borrow().right {
                 links.push(Rc::clone(right_link));
-            };
+            }
         }
         size
     }
@@ -71,17 +70,17 @@ mod tests {
         root.borrow_mut().left.replace(Rc::clone(&l));
         root.borrow_mut().right.replace(Rc::clone(&r));
 
-        l.borrow_mut().parent.replace(Rc::downgrade(&root));
+        l.borrow_mut().parent = Rc::downgrade(&root);
 
-        r.borrow_mut().parent.replace(Rc::downgrade(&root));
+        r.borrow_mut().parent = Rc::downgrade(&root);
         r.borrow_mut().left.replace(Rc::clone(&rl));
 
-        rl.borrow_mut().parent.replace(Rc::downgrade(&r));
+        rl.borrow_mut().parent = Rc::downgrade(&r);
         rl.borrow_mut().left.replace(Rc::clone(&rll));
         rl.borrow_mut().right.replace(Rc::clone(&rlr));
 
-        rll.borrow_mut().parent.replace(Rc::downgrade(&rl));
-        rlr.borrow_mut().parent.replace(Rc::downgrade(&rl));
+        rll.borrow_mut().parent = Rc::downgrade(&rl);
+        rlr.borrow_mut().parent = Rc::downgrade(&rl);
 
         let mut links = HashMap::new();
         links.insert(String::from(""), root);
