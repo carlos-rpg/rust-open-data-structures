@@ -35,7 +35,7 @@ sacrifice clarity for performance.
 - ✔️ ChainedHashTable
 - ✔️ LinearHashTable
 6. Binary trees
-- ❌ BinaryTree
+- ✔️ BinaryTree
 - ❌ BinarySearchTree
 7. Random binary search trees
 8. Scapegoat trees
@@ -45,7 +45,3 @@ sacrifice clarity for performance.
 12. Graphs
 13. Data structures for integers
 14. External memory searching
-
-# License
-
-[MIT](https://choosealicense.com/licenses/mit/)
