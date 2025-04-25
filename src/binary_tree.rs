@@ -48,8 +48,14 @@ impl<T> Node<T> {
         size
     }
 
-    pub fn height(_link: &Link<T>) -> usize {
-        unimplemented!();
+    pub fn height(link: &Option<Link<T>>) -> usize {
+        match link {
+            None => 0,
+            Some(next) => 1 + usize::max(
+                Self::height(&next.borrow().left), 
+                Self::height(&next.borrow().right),
+            )
+        }
     }
 }
 
@@ -113,5 +119,16 @@ mod tests {
         assert_eq!(Node::size(&links["RL"]), 3);
         assert_eq!(Node::size(&links["RLL"]), 1);
         assert_eq!(Node::size(&links["RLR"]), 1);
+    }
+
+    #[test]
+    fn heigh_returns() {
+        let links = build_test_tree();
+        assert_eq!(Node::height(&links[""]), 4);
+        assert_eq!(Node::height(&links["L"]), 1);
+        assert_eq!(Node::height(&links["R"]), 3);
+        assert_eq!(Node::height(&links["RL"]), 2);
+        assert_eq!(Node::height(&links["RLL"]), 1);
+        assert_eq!(Node::height(&links["RLR"]), 1);
     }
 }
