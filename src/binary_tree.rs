@@ -1,15 +1,15 @@
 use std::rc::{Rc, Weak};
 use std::cell::RefCell;
 
-type Link<T> = Option<Rc<RefCell<Node<T>>>>;
-type WeakLink<T> = Weak<RefCell<Node<T>>>;
+pub type Link<T> = Option<Rc<RefCell<Node<T>>>>;
+pub type WeakLink<T> = Weak<RefCell<Node<T>>>;
 
 
 pub struct Node<T> {
-    value: T,
-    parent: WeakLink<T>,
-    left: Link<T>,
-    right: Link<T>,
+    pub value: T,
+    pub parent: WeakLink<T>,
+    pub left: Link<T>,
+    pub right: Link<T>,
 }
 
 impl<T> Node<T> {
