@@ -3,10 +3,10 @@ use std::cell::{Ref, RefCell, RefMut};
 
 
 pub struct Node<T> {
-    value: T,
-    parent: WeakLink<T>,
-    left: Option<Link<T>>,
-    right: Option<Link<T>>,
+    pub value: T,
+    pub parent: WeakLink<T>,
+    pub left: Option<Link<T>>,
+    pub right: Option<Link<T>>,
 }
 
 impl<T> Node<T> {
