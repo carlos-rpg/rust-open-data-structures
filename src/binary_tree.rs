@@ -58,9 +58,11 @@ impl<T> Link<T> {
     pub fn size(&self) -> usize {
         let mut size = 0;
         let mut links = vec![Link::clone(&self)];
+
         while !links.is_empty() {
             size += 1;
             let link = links.remove(0);
+
             if let Some(left_link) = &link.borrow().left {
                 links.push(Link::clone(left_link));
             }
@@ -75,16 +77,14 @@ impl<T> Link<T> {
         fn recurse<T>(link_opt: &Option<Link<T>>) -> usize {
             match link_opt {
                 None => 0,
-                Some(link) => 1 + usize::max(
-                    recurse(&link.borrow().left), 
-                    recurse(&link.borrow().right),
-                )
+                Some(link) => {
+                    let left = &link.borrow().left;
+                    let right = &link.borrow().right;
+                    1 + usize::max(recurse(left), recurse(right))
+                }
             }
         }
-        1 + usize::max(
-            recurse(&self.0.borrow().left), 
-            recurse(&self.0.borrow().right),
-        )
+        recurse(&Some(self).cloned())
     }
 }
 
