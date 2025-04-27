@@ -1,7 +1,7 @@
 use crate::binary_tree::*;
 
 pub struct BinarySearchTree<T> {
-    root: Link<T>,
+    root: Option<Link<T>>,
 }
 
 impl<T: PartialOrd> BinarySearchTree<T> {
@@ -9,44 +9,37 @@ impl<T: PartialOrd> BinarySearchTree<T> {
         Self { root: None }
     }
 
-    pub fn find(&self, x: T) -> Link<T> {
-        let mut target = self.root.clone();
-
-        while let Some(link) = target.clone()  {
+    pub fn find(&self, x: T) -> Option<Link<T>> {
+        let mut link_opt = self.root.clone();
+        while let Some(ref link) = link_opt  {
             let borrow = link.borrow();
-
-            let next = if x < borrow.value {
-                &borrow.left
+            let next_link_opt = if x < borrow.value {
+                borrow.left.clone()
             } else if x > borrow.value {
-                &borrow.right
+                borrow.right.clone()
             } else {
                 break;
             };
-            target = next.clone();
+            drop(borrow);
+            link_opt = next_link_opt;
         }
-        target
+        link_opt
     }
 }
+
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::rc::{Rc, Weak};
-    use std::cell::RefCell;
-
-    fn build_test_node<T>(value: T) -> Rc<RefCell<Node<T>>> {
-        Rc::new(RefCell::new(
-            Node { value, parent: Weak::new(), left: None, right: None }
-        ))
-    }
+    use std::rc::Rc;
 
     fn build_test_tree() -> BinarySearchTree<i32> {
-        let root = build_test_node(4);
-        let l = build_test_node(0);
-        let r = build_test_node(12);
-        let rl = build_test_node(7);
-        let rll = build_test_node(5);
-        let rlr = build_test_node(9);
+        let root = Node::new(4);
+        let l = Node::new(0);
+        let r = Node::new(12);
+        let rl = Node::new(7);
+        let rll = Node::new(5);
+        let rlr = Node::new(9);
 
         root.borrow_mut().left.replace(Rc::clone(&l));
         root.borrow_mut().right.replace(Rc::clone(&r));
