@@ -1,45 +1,41 @@
 use std::rc::{Rc, Weak};
 use std::cell::RefCell;
 
-pub type Link<T> = Option<Rc<RefCell<Node<T>>>>;
+pub type Link<T> = Rc<RefCell<Node<T>>>;
 pub type WeakLink<T> = Weak<RefCell<Node<T>>>;
 
 
 pub struct Node<T> {
     pub value: T,
     pub parent: WeakLink<T>,
-    pub left: Link<T>,
-    pub right: Link<T>,
+    pub left: Option<Link<T>>,
+    pub right: Option<Link<T>>,
 }
 
 impl<T> Node<T> {
     pub fn new(value: T) -> Link<T> {
-        Some(Rc::new(RefCell::new(
+        Rc::new(RefCell::new(
             Self { value, parent: Weak::new(), left: None, right: None }
-        )))
+        ))
     }
 
-    pub fn depth(link: &Link<T>) -> Option<usize> {
+    pub fn depth(link: &Link<T>) -> usize {
         let mut depth = 0;
-        let mut link_opt = link.as_ref()?.borrow().parent.upgrade();
+        let mut link_opt = link.borrow().parent.upgrade();
 
-        while let Some(link) = link_opt {
+        while let Some(parent_link) = link_opt {
             depth += 1;
-            link_opt = link.borrow().parent.upgrade();
+            link_opt = parent_link.borrow().parent.upgrade();
         }
-        Some(depth)
+        depth
     }
 
     pub fn size(link: &Link<T>) -> usize {
         let mut size = 0;
-        let mut links = match link {
-            None => vec![],
-            Some(x) => vec![Rc::clone(x)],
-        };
+        let mut links = vec![Rc::clone(link)];
         while !links.is_empty() {
             size += 1;
             let link = links.remove(0);
-
             if let Some(left_link) = &link.borrow().left {
                 links.push(Rc::clone(left_link));
             }
@@ -51,13 +47,19 @@ impl<T> Node<T> {
     }
 
     pub fn height(link: &Link<T>) -> usize {
-        match link {
-            None => 0,
-            Some(next) => 1 + usize::max(
-                Self::height(&next.borrow().left), 
-                Self::height(&next.borrow().right),
-            )
+        fn recurse<T>(link_opt: &Option<Link<T>>) -> usize {
+            match link_opt {
+                None => 0,
+                Some(link) => 1 + usize::max(
+                    recurse(&link.borrow().left), 
+                    recurse(&link.borrow().right),
+                )
+            }
         }
+        1 + usize::max(
+            recurse(&link.borrow().left), 
+            recurse(&link.borrow().right),
+        )
     }
 }
 
@@ -97,34 +99,29 @@ mod tests {
         rlr.borrow_mut().parent = Rc::downgrade(&rl);
 
         let mut links = HashMap::new();
-        links.insert(String::from(""), Some(root));
-        links.insert(String::from("R"), Some(r));
-        links.insert(String::from("L"), Some(l));
-        links.insert(String::from("RL"), Some(rl));
-        links.insert(String::from("RLL"), Some(rll));
-        links.insert(String::from("RLR"), Some(rlr));
+        links.insert(String::from(""), root);
+        links.insert(String::from("R"), r);
+        links.insert(String::from("L"), l);
+        links.insert(String::from("RL"), rl);
+        links.insert(String::from("RLL"), rll);
+        links.insert(String::from("RLR"), rlr);
 
         links
     }
 
     #[test]
-    fn depth_some_link_returns() {
+    fn depth_returns() {
         let links = build_test_tree();
-        assert_eq!(Node::depth(&links[""]), Some(0));
-        assert_eq!(Node::depth(&links["R"]), Some(1));
-        assert_eq!(Node::depth(&links["L"]), Some(1));
-        assert_eq!(Node::depth(&links["RL"]), Some(2));
-        assert_eq!(Node::depth(&links["RLL"]), Some(3));
-        assert_eq!(Node::depth(&links["RLR"]), Some(3));
+        assert_eq!(Node::depth(&links[""]), 0);
+        assert_eq!(Node::depth(&links["R"]), 1);
+        assert_eq!(Node::depth(&links["L"]), 1);
+        assert_eq!(Node::depth(&links["RL"]), 2);
+        assert_eq!(Node::depth(&links["RLL"]),3);
+        assert_eq!(Node::depth(&links["RLR"]), 3);
     }
 
     #[test]
-    fn depth_none_link_returns_zero() {
-        assert_eq!(Node::<i32>::depth(&None), None);
-    }
-
-    #[test]
-    fn size_some_link_returns_non_zero() {
+    fn size_returns() {
         let links = build_test_tree();
         assert_eq!(Node::size(&links[""]), 6);
         assert_eq!(Node::size(&links["L"]), 1);
@@ -135,12 +132,7 @@ mod tests {
     }
 
     #[test]
-    fn size_none_link_returns_zero() {
-        assert_eq!(Node::<i32>::size(&None), 0);
-    }
-
-    #[test]
-    fn height_some_link_returns_non_zero() {
+    fn height_returns() {
         let links = build_test_tree();
         assert_eq!(Node::height(&links[""]), 4);
         assert_eq!(Node::height(&links["L"]), 1);
@@ -148,10 +140,5 @@ mod tests {
         assert_eq!(Node::height(&links["RL"]), 2);
         assert_eq!(Node::height(&links["RLL"]), 1);
         assert_eq!(Node::height(&links["RLR"]), 1);
-    }
-
-    #[test]
-    fn height_none_link_returns_zero() {
-        assert_eq!(Node::<i32>::height(&None), 0);
     }
 }
