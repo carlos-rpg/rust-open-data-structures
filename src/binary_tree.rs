@@ -1,16 +1,16 @@
 use std::rc::{Rc, Weak};
-use std::cell::{Ref, RefCell, RefMut};
+use std::cell::RefCell;
 
 
 pub struct Node<T> {
     pub value: T,
-    pub parent: WeakLink<T>,
-    pub left: Option<Link<T>>,
-    pub right: Option<Link<T>>,
+    parent: WeakLink<T>,
+    left: Option<Link<T>>,
+    right: Option<Link<T>>,
 }
 
 impl<T> Node<T> {
-    pub fn new(value: T) -> Node<T> {
+    fn new(value: T) -> Node<T> {
         Self { value, parent: WeakLink(Weak::new()), left: None, right: None }
     }
 }
@@ -19,7 +19,7 @@ impl<T> Node<T> {
 pub struct WeakLink<T>(Weak<RefCell<Node<T>>>);
 
 impl<T> WeakLink<T> {
-    pub fn upgrade(&self) -> Option<Link<T>> {
+    fn upgrade(&self) -> Option<Link<T>> {
         self.0.upgrade().map(|x| Link(x))
     }
 }
@@ -29,28 +29,48 @@ pub struct Link<T>(Rc<RefCell<Node<T>>>);
 
 impl<T> Link<T> {
     pub fn new(value: T) -> Self {
-        Self( Rc::new(RefCell::new(Node::new(value))) )
-    }
-
-    pub fn borrow(&self) -> Ref<Node<T>> {
-        self.0.borrow()
-    }
-
-    pub fn borrow_mut(&self) -> RefMut<Node<T>> {
-        self.0.borrow_mut()
+        Self(Rc::new(RefCell::new(Node::new(value))))
     }
 
     pub fn downgrade(&self) -> WeakLink<T> {
         WeakLink(Rc::downgrade(&self.0))
     }
 
+    pub fn get_parent(&self) -> Option<Link<T>> {
+        self.0.borrow().parent.upgrade()
+    }
+
+    pub fn set_parent(&self, link: &Link<T>) {
+        self.0.borrow_mut().parent = Link::downgrade(link);
+    }
+
+    pub fn get_left(&self) -> Option<Link<T>> {
+        self.0.borrow().left.as_ref().map(|x| Link::clone(x))
+    }
+
+    pub fn set_left(&self, link: &Link<T>) {
+        self.0.borrow_mut().left = Some(Link::clone(link));
+    }
+
+    pub fn get_right(&self) -> Option<Link<T>> {
+        self.0.borrow().right.as_ref().map(|x| Link::clone(x))
+    }
+
+    pub fn set_right(&self, link: &Link<T>) {
+        self.0.borrow_mut().right = Some(Link::clone(link));
+    }
+
+    pub fn into_inner_node(self) -> Option<Node<T>> {
+        Some(Rc::into_inner(self.0)?.into_inner())
+    }
+
     pub fn depth(&self) -> usize {
         let mut depth = 0;
-        let mut link_opt = self.borrow().parent.upgrade();
+        let mut link_opt = self.get_parent();
 
         while let Some(link) = link_opt {
             depth += 1;
-            link_opt = link.borrow().parent.upgrade();
+            link_opt = link.get_parent();
         }
         depth
     }
@@ -63,28 +83,27 @@ impl<T> Link<T> {
             size += 1;
             let link = links.remove(0);
 
-            if let Some(left_link) = &link.borrow().left {
-                links.push(Link::clone(left_link));
+            if let Some(left_link) = link.get_left() {
+                links.push(left_link);
             }
-            if let Some(right_link) = &link.borrow().right {
-                links.push(Link::clone(right_link));
+            if let Some(right_link) = link.get_right() {
+                links.push(right_link);
             }
         }
         size
     }
 
     pub fn height(&self) -> usize {
-        fn recurse<T>(link_opt: &Option<Link<T>>) -> usize {
+        fn recurse<T>(link_opt: Option<Link<T>>) -> usize {
             match link_opt {
                 None => 0,
-                Some(link) => {
-                    let left = &link.borrow().left;
-                    let right = &link.borrow().right;
-                    1 + usize::max(recurse(left), recurse(right))
-                }
+                Some(link) => 1 + usize::max(
+                    recurse(link.get_left()), 
+                    recurse(link.get_right()),
+                )
             }
         }
-        recurse(&Some(self).cloned())
+        recurse(Some(self).cloned())
     }
 }
 
