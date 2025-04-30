@@ -2,8 +2,9 @@ use std::rc::{Rc, Weak};
 use std::cell::RefCell;
 
 
-pub struct Node<T> {
-    pub value: T,
+#[derive(Debug)]
+struct Node<T> {
+    value: T,
     parent: WeakLink<T>,
     left: Option<Link<T>>,
     right: Option<Link<T>>,
@@ -15,8 +16,21 @@ impl<T> Node<T> {
     }
 }
 
+impl<T: PartialEq> PartialEq for Node<T> {
+    fn eq(&self, other: &Self) -> bool {
+        self.value == other.value
+    }
+}
 
-pub struct WeakLink<T>(Weak<RefCell<Node<T>>>);
+impl<T: PartialOrd> PartialOrd for Node<T> {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        self.value.partial_cmp(&other.value)
+    }
+}
+
+
+#[derive(Debug)]
+struct WeakLink<T>(Weak<RefCell<Node<T>>>);
 
 impl<T> WeakLink<T> {
     fn upgrade(&self) -> Option<Link<T>> {
@@ -25,6 +39,7 @@ impl<T> WeakLink<T> {
 }
 
 
+#[derive(PartialEq, Debug, PartialOrd)]
 pub struct Link<T>(Rc<RefCell<Node<T>>>);
 
 impl<T> Link<T> {
@@ -32,16 +47,12 @@ impl<T> Link<T> {
         Self(Rc::new(RefCell::new(Node::new(value))))
     }
 
-    pub fn downgrade(&self) -> WeakLink<T> {
-        WeakLink(Rc::downgrade(&self.0))
-    }
-
     pub fn get_parent(&self) -> Option<Link<T>> {
         self.0.borrow().parent.upgrade()
     }
 
     pub fn set_parent(&self, link: &Link<T>) {
-        self.0.borrow_mut().parent = Link::downgrade(link);
+        self.0.borrow_mut().parent = WeakLink(Rc::downgrade(&link.0));
     }
 
     pub fn get_left(&self) -> Option<Link<T>> {
@@ -58,10 +69,6 @@ impl<T> Link<T> {
 
     pub fn set_right(&self, link: &Link<T>) {
         self.0.borrow_mut().right = Some(Link::clone(link));
-    }
-
-    pub fn into_inner_node(self) -> Option<Node<T>> {
-        Some(Rc::into_inner(self.0)?.into_inner())
     }
 
     pub fn depth(&self) -> usize {
@@ -125,28 +132,28 @@ mod tests {
         )))
     }
 
-    fn build_test_tree() -> HashMap<String, Link<i32>> {
-        let root = build_test_node(0);
-        let l = build_test_node(1);
-        let r = build_test_node(2);
-        let rl = build_test_node(3);
-        let rll = build_test_node(4);
-        let rlr = build_test_node(5);
+    fn build_test_tree() -> HashMap<String, Link<char>> {
+        let root = build_test_node('a');
+        let l = build_test_node('b');
+        let r = build_test_node('c');
+        let rl = build_test_node('d');
+        let rll = build_test_node('e');
+        let rlr = build_test_node('f');
 
-        root.borrow_mut().left.replace(Link::clone(&l));
-        root.borrow_mut().right.replace(Link::clone(&r));
+        root.0.borrow_mut().left = Some(Link::clone(&l));
+        root.0.borrow_mut().right = Some(Link::clone(&r));
 
-        l.borrow_mut().parent = Link::downgrade(&root);
+        l.0.borrow_mut().parent = WeakLink(Rc::downgrade(&root.0));
 
-        r.borrow_mut().parent = Link::downgrade(&root);
-        r.borrow_mut().left.replace(Link::clone(&rl));
+        r.0.borrow_mut().parent = WeakLink(Rc::downgrade(&root.0));
+        r.0.borrow_mut().left = Some(Link::clone(&rl));
 
-        rl.borrow_mut().parent = Link::downgrade(&r);
-        rl.borrow_mut().left.replace(Link::clone(&rll));
-        rl.borrow_mut().right.replace(Link::clone(&rlr));
+        rl.0.borrow_mut().parent = WeakLink(Rc::downgrade(&r.0));
+        rl.0.borrow_mut().left = Some(Link::clone(&rll));
+        rl.0.borrow_mut().right = Some(Link::clone(&rlr));
 
-        rll.borrow_mut().parent = Link::downgrade(&rl);
-        rlr.borrow_mut().parent = Link::downgrade(&rl);
+        rll.0.borrow_mut().parent = WeakLink(Rc::downgrade(&rl.0));
+        rlr.0.borrow_mut().parent = WeakLink(Rc::downgrade(&rl.0));
 
         let mut links = HashMap::new();
         links.insert(String::from(""), root);
