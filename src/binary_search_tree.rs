@@ -2,30 +2,46 @@ use crate::binary_tree::*;
 
 pub struct BinarySearchTree<T> {
     root: Option<Link<T>>,
+    size: usize,
+}
+
+impl<T> BinarySearchTree<T> {
+    pub fn new() -> BinarySearchTree<T> {
+        Self { root: None, size: 0 }
+    }
+
+    pub fn size(&self) -> usize {
+        self.size
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.root.is_none()
+    }
 }
 
 impl<T: PartialOrd> BinarySearchTree<T> {
-    pub fn new() -> BinarySearchTree<T> {
-        Self { root: None }
-    }
-
     pub fn find(&self, value: T) -> Option<Link<T>> {
+        let value_link = Link::new(value);
         let mut link_opt = self.root.clone();
 
         while let Some(ref link) = link_opt  {
-            let node = link.borrow();
-
-            let next = if value < node.value {
-                node.left.clone()
-            } else if value > node.value {
-                node.right.clone()
+            link_opt = if value_link < *link {
+                link.get_left()
+            } else if value_link > *link {
+                link.get_right()
             } else {
                 break;
             };
-            drop(node);
-            link_opt = next
         }
         link_opt
+    }
+
+    pub fn add(&self, _value: T) -> bool {
+        unimplemented!();
+    }
+
+    pub fn remove(&self, _value: T) -> bool {
+        unimplemented!();
     }
 }
 
@@ -42,52 +58,40 @@ mod tests {
         let rll = Link::new(5);
         let rlr = Link::new(9);
 
-        root.borrow_mut().left.replace(Link::clone(&l));
-        root.borrow_mut().right.replace(Link::clone(&r));
+        root.set_left(&l);
+        root.set_right(&r);
+        l.set_parent(&root);
+        r.set_parent(&root);
+        r.set_left(&rl);
+        rl.set_parent(&r);
+        rl.set_left(&rll);
+        rl.set_right(&rlr);
+        rll.set_parent(&rl);
+        rlr.set_parent(&rl);
 
-        l.borrow_mut().parent = Link::downgrade(&root);
-
-        r.borrow_mut().parent = Link::downgrade(&root);
-        r.borrow_mut().left.replace(Link::clone(&rl));
-
-        rl.borrow_mut().parent = Link::downgrade(&r);
-        rl.borrow_mut().left.replace(Link::clone(&rll));
-        rl.borrow_mut().right.replace(Link::clone(&rlr));
-
-        rll.borrow_mut().parent = Link::downgrade(&rl);
-        rlr.borrow_mut().parent = Link::downgrade(&rl);
-
-        BinarySearchTree { root: Some(root) }
+        BinarySearchTree { root: Some(root), size: 6 }
     }
 
     #[test]
     fn find_empty_returns_none() {
-        let tree = BinarySearchTree { root: None };
+        let tree = BinarySearchTree { root: None, size: 0 };
         assert!(tree.find(1).is_none());
     }
 
     #[test]
     fn find_non_emtpy_returns_some() {
         let tree = build_test_tree();
-        let link_4 = tree.find(4).unwrap().borrow().value;
-        let link_0 = tree.find(0).unwrap().borrow().value;
-        let link_12 = tree.find(12).unwrap().borrow().value;
-        let link_7 = tree.find(7).unwrap().borrow().value;
-        let link_5 = tree.find(5).unwrap().borrow().value;
-        let link_9 = tree.find(9).unwrap().borrow().value;
-
-        assert_eq!(link_4, 4);
-        assert_eq!(link_0, 0);
-        assert_eq!(link_12, 12);
-        assert_eq!(link_7, 7);
-        assert_eq!(link_5, 5);
-        assert_eq!(link_9, 9);
+        assert_eq!(tree.find(4).unwrap(), Link::new(4));
+        assert_eq!(tree.find(0).unwrap(), Link::new(0));
+        assert_eq!(tree.find(12).unwrap(), Link::new(12));
+        assert_eq!(tree.find(7).unwrap(), Link::new(7));
+        assert_eq!(tree.find(5).unwrap(), Link::new(5));
+        assert_eq!(tree.find(9).unwrap(), Link::new(9));
     }
 
     #[test]
     fn find_non_empty_returns_none() {
         let tree = build_test_tree();
-
         assert!(tree.find(-1).is_none());
         assert!(tree.find(101).is_none());
         assert!(tree.find(1).is_none());
