@@ -132,7 +132,7 @@ mod tests {
         )))
     }
 
-    fn build_test_tree() -> HashMap<String, RefNode<char>> {
+    fn build_test_nodes() -> HashMap<String, RefNode<char>> {
         let root = build_test_node('a');
         let l = build_test_node('b');
         let r = build_test_node('c');
@@ -167,8 +167,39 @@ mod tests {
     }
 
     #[test]
+    fn new_refnode() {
+        let node = RefNode::new('a');
+        assert!(node.0.borrow().left.is_none());
+        assert!(node.0.borrow().right.is_none());
+        assert!(node.0.borrow().parent.0.upgrade().is_none());
+        assert_eq!(node.0.borrow().value, 'a');
+    }
+
+    #[test]
+    fn get_parent_no_node() {
+        let node = build_test_node('a');
+        assert!(node.get_parent().is_none());
+    }
+
+    #[test]
+    fn get_parent_some_node() {
+        let node1 = build_test_node('a');
+        let node2 = build_test_node('b');
+        node2.0.borrow_mut().parent = WeakRefNode(Rc::downgrade(&node1.0));
+        assert!(node2.get_parent().is_some());
+        assert_eq!(node2.get_parent().unwrap(), node1);
+    }
+
+    #[test]
+    fn set_parent() {
+        let node1 = build_test_node('a');
+        let node2 = build_test_node('b');
+        node2.set_parent(&node1);
+        assert_eq!(node2.0.borrow().parent.upgrade().unwrap(), node1);
+    }
+    #[test]
     fn depth_returns() {
-        let nodes = build_test_tree();
+        let nodes = build_test_nodes();
         assert_eq!(nodes[""].depth(), 0);
         assert_eq!(nodes["L"].depth(), 1);
         assert_eq!(nodes["R"].depth(), 1);
@@ -179,7 +210,7 @@ mod tests {
 
     #[test]
     fn size_returns() {
-        let nodes = build_test_tree();
+        let nodes = build_test_nodes();
         assert_eq!(nodes[""].size(), 6);
         assert_eq!(nodes["L"].size(), 1);
         assert_eq!(nodes["R"].size(), 4);
@@ -190,7 +221,7 @@ mod tests {
 
     #[test]
     fn height_returns() {
-        let nodes = build_test_tree();
+        let nodes = build_test_nodes();
         assert_eq!(nodes[""].height(), 4);
         assert_eq!(nodes["L"].height(), 1);
         assert_eq!(nodes["R"].height(), 3);

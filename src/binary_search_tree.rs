@@ -132,4 +132,51 @@ mod tests {
         assert!(tree.find(101).is_none());
         assert!(tree.find(1).is_none());
     }
+
+    #[test]
+    fn add_returns_insertion_outcome() {
+        let mut tree = BinarySearchTree { root: None, size : 0 };
+        assert!(tree.add(0));
+        assert!(tree.add(2));
+        assert!(!tree.add(0));
+        assert!(tree.add(-2));
+        assert!(!tree.add(2));
+    }
+
+    #[test]
+    fn add_keeps_size_count() {
+        let mut tree = BinarySearchTree { root: None, size: 0 };
+        assert_eq!(tree.size(), 0);
+        tree.add(0);
+        assert_eq!(tree.size(), 1);
+        tree.add(2);
+        assert_eq!(tree.size(), 2);
+        tree.add(2);
+        assert_eq!(tree.size(), 2);
+        tree.add(-2);
+        assert_eq!(tree.size(), 3);
+    }
+
+    #[test]
+    fn add_emtpy_inserts_root() {
+        let mut tree = BinarySearchTree { root: None, size: 0 };
+        let node = RefNode::new(0);
+        tree.add(0);
+        let root = tree.root.clone().unwrap();
+        assert_eq!(root, node);
+        assert!(root.get_parent().is_none());
+        assert!(root.get_left().is_none());
+        assert!(root.get_right().is_none());
+    }
+
+    #[test]
+    fn add_non_empty_inserts_leaf() {
+        let mut tree = build_test_tree();
+        tree.add(-1);
+        let node = tree.root.clone().unwrap().get_left().unwrap().get_left().unwrap();
+        assert_eq!(node, RefNode::new(-1));
+        assert!(node.get_left().is_none());
+        assert!(node.get_right().is_none());
+        assert!(node.get_parent().is_some());
+    }
 }
