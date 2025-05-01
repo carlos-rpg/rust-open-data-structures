@@ -1,7 +1,7 @@
 use crate::binary_tree::*;
 
 pub struct BinarySearchTree<T> {
-    root: Option<Link<T>>,
+    root: Option<RefNode<T>>,
     size: usize,
 }
 
@@ -20,24 +20,60 @@ impl<T> BinarySearchTree<T> {
 }
 
 impl<T: PartialOrd> BinarySearchTree<T> {
-    pub fn find(&self, value: T) -> Option<Link<T>> {
-        let value_link = Link::new(value);
-        let mut link_opt = self.root.clone();
+    pub fn find(&self, value: T) -> Option<RefNode<T>> {
+        let value_node = RefNode::new(value);
+        let mut node_opt = self.root.clone();
 
-        while let Some(ref link) = link_opt  {
-            link_opt = if value_link < *link {
-                link.get_left()
-            } else if value_link > *link {
-                link.get_right()
+        while let Some(ref node) = node_opt  {
+            node_opt = if value_node < *node {
+                node.get_left()
+            } else if value_node > *node {
+                node.get_right()
             } else {
                 break;
             };
         }
-        link_opt
+        node_opt
     }
 
-    pub fn add(&self, _value: T) -> bool {
-        unimplemented!();
+    fn find_last(&self, value_node: &RefNode<T>) -> Option<RefNode<T>> {
+        let mut node_opt = self.root.clone();
+        let mut last_node = None;
+
+        while let Some(node) = node_opt  {
+            last_node = Some(RefNode::clone(&node));
+
+            node_opt = if *value_node < node {
+                node.get_left()
+            } else if *value_node > node {
+                node.get_right()
+            } else {
+                break;
+            };
+        }
+        last_node
+    }
+
+    pub fn add(&mut self, value: T) -> bool {
+        let new_node = RefNode::new(value);
+
+        match self.find_last(&new_node) {
+            None => {
+                self.root = Some(new_node);
+            },
+            Some(last_node) => {
+                if new_node < last_node {
+                    last_node.set_left(&new_node);
+                } else if new_node > last_node {
+                    last_node.set_right(&new_node);
+                } else {
+                    return false;
+                }
+                new_node.set_parent(&last_node);
+            },
+        };
+        self.size += 1;
+        true
     }
 
     pub fn remove(&self, _value: T) -> bool {
@@ -51,12 +87,12 @@ mod tests {
     use super::*;
 
     fn build_test_tree() -> BinarySearchTree<i32> {
-        let root = Link::new(4);
-        let l = Link::new(0);
-        let r = Link::new(12);
-        let rl = Link::new(7);
-        let rll = Link::new(5);
-        let rlr = Link::new(9);
+        let root = RefNode::new(4);
+        let l = RefNode::new(0);
+        let r = RefNode::new(12);
+        let rl = RefNode::new(7);
+        let rll = RefNode::new(5);
+        let rlr = RefNode::new(9);
 
         root.set_left(&l);
         root.set_right(&r);
@@ -81,12 +117,12 @@ mod tests {
     #[test]
     fn find_non_emtpy_returns_some() {
         let tree = build_test_tree();
-        assert_eq!(tree.find(4).unwrap(), Link::new(4));
-        assert_eq!(tree.find(0).unwrap(), Link::new(0));
-        assert_eq!(tree.find(12).unwrap(), Link::new(12));
-        assert_eq!(tree.find(7).unwrap(), Link::new(7));
-        assert_eq!(tree.find(5).unwrap(), Link::new(5));
-        assert_eq!(tree.find(9).unwrap(), Link::new(9));
+        assert_eq!(tree.find(4).unwrap(), RefNode::new(4));
+        assert_eq!(tree.find(0).unwrap(), RefNode::new(0));
+        assert_eq!(tree.find(12).unwrap(), RefNode::new(12));
+        assert_eq!(tree.find(7).unwrap(), RefNode::new(7));
+        assert_eq!(tree.find(5).unwrap(), RefNode::new(5));
+        assert_eq!(tree.find(9).unwrap(), RefNode::new(9));
     }
 
     #[test]
