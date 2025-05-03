@@ -63,9 +63,9 @@ impl<T: PartialOrd> BinarySearchTree<T> {
             },
             Some(last_node) => {
                 if new_node < last_node {
-                    last_node.set_left(&new_node);
+                    last_node.set_left(Some(&new_node));
                 } else if new_node > last_node {
-                    last_node.set_right(&new_node);
+                    last_node.set_right(Some(&new_node));
                 } else {
                     return false;
                 }
@@ -76,12 +76,12 @@ impl<T: PartialOrd> BinarySearchTree<T> {
         true
     }
 
-    fn splice(&mut self, node: RefNode<T>) {
+    fn remove_partially_branched(&mut self, node: RefNode<T>) {
         let mut child_opt = node.get_left();
         if child_opt.is_none() {
             child_opt = node.get_right();
         }
-        let parent_opt = if node.get_parent().is_none() {
+        let parent_opt = if node.is_root() {
             self.root = child_opt;
             None
         } else {
@@ -89,16 +89,12 @@ impl<T: PartialOrd> BinarySearchTree<T> {
                 .get_parent()
                 .expect("`node` should not be a root one");
 
-            let child = child_opt
-                .as_ref()
-                .expect("");
-
             if let Some(left) = parent.get_left() {
                 if left == node {
-                    parent.set_left(child);
+                    parent.set_left(child_opt.as_ref());
                 }
             } else {
-                parent.set_right(child);
+                parent.set_right(child_opt.as_ref());
             }
             Some(parent)
         };
@@ -107,26 +103,41 @@ impl<T: PartialOrd> BinarySearchTree<T> {
         }
     }
 
+    fn remove_fully_branched(&self, node: RefNode<T>) {
+        let mut min_node = node
+            .get_right()
+            .expect("`node` should have both children");
+
+        let mut iterated = false;
+        while let Some(left) = min_node.get_left() {
+            min_node = left;
+            iterated = true;
+        }
+        let last = min_node
+            .get_parent()
+            .expect("`min_node` should have a parent");
+
+        if iterated {
+            last.set_left(None);
+        } else {
+            last.set_right(None);
+        }
+        let min_value = min_node
+            .into_inner_value()
+            .expect("`min_node` should have only 1 reference");
+
+        node.set(min_value);
+    }
+
     pub fn remove(&mut self, value: T) -> bool {
         let node = match self.find(value) {
             None => return false,
             Some(node) => node,
         };
-        if node.get_left().is_none() || node.get_right().is_none() {
-            self.splice(node);
+        if node.is_fully_branched() {
+            self.remove_fully_branched(node);
         } else {
-            let mut right_min_node = node
-                .get_right()
-                .expect("`node` should have both children");
-
-            while let Some(left) = right_min_node.get_left() {
-                right_min_node = left;
-            }
-            let right_min_value = right_min_node
-                .into_inner_value()
-                .expect("");
-
-            node.set(right_min_value);
+            self.remove_partially_branched(node);
         }
         self.size -= 1;
         true
@@ -146,14 +157,14 @@ mod tests {
         let rll = RefNode::new(5);
         let rlr = RefNode::new(9);
 
-        root.set_left(&l);
-        root.set_right(&r);
+        root.set_left(Some(&l));
+        root.set_right(Some(&r));
         l.set_parent(&root);
         r.set_parent(&root);
-        r.set_left(&rl);
+        r.set_left(Some(&rl));
         rl.set_parent(&r);
-        rl.set_left(&rll);
-        rl.set_right(&rlr);
+        rl.set_left(Some(&rll));
+        rl.set_right(Some(&rlr));
         rll.set_parent(&rl);
         rlr.set_parent(&rl);
 
@@ -265,5 +276,7 @@ mod tests {
         assert_eq!(tree.root.clone().unwrap().get_right().unwrap(), RefNode::new(7));
         tree.remove(7);
         assert_eq!(tree.root.clone().unwrap().get_right().unwrap(), RefNode::new(9));
+        tree.remove(4);
+        assert_eq!(tree.root.clone().unwrap(), RefNode::new(9));
     }
 }
