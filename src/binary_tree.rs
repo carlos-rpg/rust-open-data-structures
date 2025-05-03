@@ -71,6 +71,14 @@ impl<T> RefNode<T> {
         self.0.borrow_mut().right = Some(RefNode::clone(node));
     }
 
+    pub fn into_inner_value(self) -> Option<T> {
+        Some(Rc::into_inner(self.0)?.into_inner().value)
+    }
+
+    pub(super) fn set(&self, value: T) {
+        self.0.borrow_mut().value = value;
+    }
+
     pub fn depth(&self) -> usize {
         let mut depth = 0;
         let mut node_opt = self.get_parent();
