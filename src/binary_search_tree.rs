@@ -69,7 +69,7 @@ impl<T: PartialOrd> BinarySearchTree<T> {
                 } else {
                     return false;
                 }
-                new_node.set_parent(&last_node);
+                new_node.set_parent(Some(&last_node));
             },
         };
         self.size += 1;
@@ -82,7 +82,7 @@ impl<T: PartialOrd> BinarySearchTree<T> {
             child_opt = node.get_right();
         }
         let parent_opt = if node.is_root() {
-            self.root = child_opt;
+            self.root = child_opt.clone();
             None
         } else {
             let parent = node
@@ -98,8 +98,8 @@ impl<T: PartialOrd> BinarySearchTree<T> {
             }
             Some(parent)
         };
-        if let Some(parent) = parent_opt {
-            parent.set_parent(&node);
+        if let Some(child) = child_opt {
+            child.set_parent(parent_opt.as_ref());
         }
     }
 
@@ -159,14 +159,14 @@ mod tests {
 
         root.set_left(Some(&l));
         root.set_right(Some(&r));
-        l.set_parent(&root);
-        r.set_parent(&root);
+        l.set_parent(Some(&root));
+        r.set_parent(Some(&root));
         r.set_left(Some(&rl));
-        rl.set_parent(&r);
+        rl.set_parent(Some(&r));
         rl.set_left(Some(&rll));
         rl.set_right(Some(&rlr));
-        rll.set_parent(&rl);
-        rlr.set_parent(&rl);
+        rll.set_parent(Some(&rl));
+        rlr.set_parent(Some(&rl));
 
         BinarySearchTree { root: Some(root), size: 6 }
     }

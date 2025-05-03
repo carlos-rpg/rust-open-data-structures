@@ -12,7 +12,7 @@ struct Node<T> {
 
 impl<T> Node<T> {
     fn new(value: T) -> Node<T> {
-        Self { value, parent: WeakRefNode(Weak::new()), left: None, right: None }
+        Self { value, parent: WeakRefNode::new(), left: None, right: None }
     }
 }
 
@@ -33,6 +33,10 @@ impl<T: PartialOrd> PartialOrd for Node<T> {
 struct WeakRefNode<T>(Weak<RefCell<Node<T>>>);
 
 impl<T> WeakRefNode<T> {
+    fn new() -> Self {
+        Self(Weak::new())
+    }
+
     fn upgrade(&self) -> Option<RefNode<T>> {
         self.0.upgrade().map(|x| RefNode(x))
     }
@@ -59,8 +63,11 @@ impl<T> RefNode<T> {
         self.0.borrow().parent.upgrade()
     }
 
-    pub fn set_parent(&self, node: &RefNode<T>) {
-        self.0.borrow_mut().parent = WeakRefNode(Rc::downgrade(&node.0));
+    pub fn set_parent(&self, node: Option<&RefNode<T>>) {
+        self.0.borrow_mut().parent = match node {
+            None => WeakRefNode::new(),
+            Some(ref_node) => WeakRefNode(Rc::downgrade(&ref_node.0)),
+        };
     }
 
     pub fn get_left(&self) -> Option<RefNode<T>> {
@@ -210,7 +217,7 @@ mod tests {
     fn set_parent() {
         let node1 = build_test_node('a');
         let node2 = build_test_node('b');
-        node2.set_parent(&node1);
+        node2.set_parent(Some(&node1));
         assert_eq!(node2.0.borrow().parent.upgrade().unwrap(), node1);
     }
     #[test]
