@@ -212,10 +212,9 @@ mod tests {
     #[test]
     fn add_emtpy_inserts_root() {
         let mut tree = BinarySearchTree { root: None, size: 0 };
-        let node = RefNode::new(0);
         tree.add(0);
         let root = tree.root.clone().unwrap();
-        assert_eq!(root, node);
+        assert_eq!(root, RefNode::new(0));
         assert!(root.get_parent().is_none());
         assert!(root.get_left().is_none());
         assert!(root.get_right().is_none());
@@ -225,10 +224,46 @@ mod tests {
     fn add_non_empty_inserts_leaf() {
         let mut tree = build_test_tree();
         tree.add(-1);
-        let node = tree.root.clone().unwrap().get_left().unwrap().get_left().unwrap();
-        assert_eq!(node, RefNode::new(-1));
-        assert!(node.get_left().is_none());
-        assert!(node.get_right().is_none());
-        assert!(node.get_parent().is_some());
+        let leaf = tree.root.clone().unwrap().get_left().unwrap().get_left().unwrap();
+        assert_eq!(leaf, RefNode::new(-1));
+        assert!(leaf.get_left().is_none());
+        assert!(leaf.get_right().is_none());
+        assert!(leaf.get_parent().is_some());
+    }
+
+    #[test]
+    fn remove_returns_outcome() {
+        let mut tree = build_test_tree();
+        assert!(tree.remove(0));
+        assert!(!tree.remove(0));
+        assert!(tree.remove(12));
+        assert!(!tree.remove(12));
+        assert!(tree.remove(7));
+        assert!(!tree.remove(7));
+    }
+
+    #[test]
+    fn remove_keeps_track_of_size() {
+        let mut tree = build_test_tree();
+        assert_eq!(tree.size(), 6);
+        tree.remove(0);
+        assert_eq!(tree.size(), 5);
+        tree.remove(12);
+        assert_eq!(tree.size(), 4);
+        tree.remove(12);
+        assert_eq!(tree.size(), 4);
+        tree.remove(7);
+        assert_eq!(tree.size(), 3);
+    }
+
+    #[test]
+    fn remove_takes_value_out_of_tree() {
+        let mut tree = build_test_tree();
+        tree.remove(0);
+        assert!(tree.root.clone().unwrap().get_left().is_none());
+        tree.remove(12);
+        assert_eq!(tree.root.clone().unwrap().get_right().unwrap(), RefNode::new(7));
+        tree.remove(7);
+        assert_eq!(tree.root.clone().unwrap().get_right().unwrap(), RefNode::new(9));
     }
 }
