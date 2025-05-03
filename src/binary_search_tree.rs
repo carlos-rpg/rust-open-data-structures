@@ -76,8 +76,60 @@ impl<T: PartialOrd> BinarySearchTree<T> {
         true
     }
 
-    pub fn remove(&self, _value: T) -> bool {
-        unimplemented!();
+    fn splice(&mut self, node: RefNode<T>) {
+        let mut child_opt = node.get_left();
+        if child_opt.is_none() {
+            child_opt = node.get_right();
+        }
+        let parent_opt = if node.get_parent().is_none() {
+            self.root = child_opt;
+            None
+        } else {
+            let parent = node
+                .get_parent()
+                .expect("`node` should not be a root one");
+
+            let child = child_opt
+                .as_ref()
+                .expect("");
+
+            if let Some(left) = parent.get_left() {
+                if left == node {
+                    parent.set_left(child);
+                }
+            } else {
+                parent.set_right(child);
+            }
+            Some(parent)
+        };
+        if let Some(parent) = parent_opt {
+            parent.set_parent(&node);
+        }
+    }
+
+    pub fn remove(&mut self, value: T) -> bool {
+        let node = match self.find(value) {
+            None => return false,
+            Some(node) => node,
+        };
+        if node.get_left().is_none() || node.get_right().is_none() {
+            self.splice(node);
+        } else {
+            let mut right_min_node = node
+                .get_right()
+                .expect("`node` should have both children");
+
+            while let Some(left) = right_min_node.get_left() {
+                right_min_node = left;
+            }
+            let right_min_value = right_min_node
+                .into_inner_value()
+                .expect("");
+
+            node.set(right_min_value);
+        }
+        self.size -= 1;
+        true
     }
 }
 
