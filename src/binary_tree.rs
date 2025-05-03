@@ -47,6 +47,14 @@ impl<T> RefNode<T> {
         Self(Rc::new(RefCell::new(Node::new(value))))
     }
 
+    pub fn is_root(&self) -> bool {
+        self.get_parent().is_none()
+    }
+
+    pub fn is_fully_branched(&self) -> bool {
+        self.get_left().is_some() && self.get_right().is_some()
+    }
+
     pub fn get_parent(&self) -> Option<RefNode<T>> {
         self.0.borrow().parent.upgrade()
     }
@@ -56,19 +64,19 @@ impl<T> RefNode<T> {
     }
 
     pub fn get_left(&self) -> Option<RefNode<T>> {
-        self.0.borrow().left.as_ref().map(|x| RefNode::clone(x))
+        self.0.borrow().left.as_ref().map(RefNode::clone)
     }
 
-    pub fn set_left(&self, node: &RefNode<T>) {
-        self.0.borrow_mut().left = Some(RefNode::clone(node));
+    pub fn set_left(&self, node: Option<&RefNode<T>>) {
+        self.0.borrow_mut().left = node.map(RefNode::clone);
     }
 
     pub fn get_right(&self) -> Option<RefNode<T>> {
-        self.0.borrow().right.as_ref().map(|x| RefNode::clone(x))
+        self.0.borrow().right.as_ref().map(RefNode::clone)
     }
 
-    pub fn set_right(&self, node: &RefNode<T>) {
-        self.0.borrow_mut().right = Some(RefNode::clone(node));
+    pub fn set_right(&self, node: Option<&RefNode<T>>) {
+        self.0.borrow_mut().right = node.map(RefNode::clone);
     }
 
     pub fn into_inner_value(self) -> Option<T> {
