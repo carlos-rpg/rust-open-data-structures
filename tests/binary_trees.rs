@@ -3,7 +3,6 @@ use ods::binary_search_tree::BinarySearchTree;
 #[test]
 fn binary_search_tree() {
     let mut tree = BinarySearchTree::new();
-
     assert!(tree.is_empty());
 
     tree.add(0);

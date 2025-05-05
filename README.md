@@ -36,7 +36,7 @@ sacrifice clarity for performance.
 - ✔️ LinearHashTable
 6. Binary trees
 - ✔️ BinaryTree
-- ❌ BinarySearchTree
+- ✔️ BinarySearchTree
 7. Random binary search trees
 8. Scapegoat trees
 9. Red-black trees
