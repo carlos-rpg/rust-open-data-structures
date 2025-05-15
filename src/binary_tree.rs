@@ -1,3 +1,10 @@
+//! Safe nodes and mutable references to nodes for binary tree structures.
+//! 
+//! Internally, a `Node` implements `Weak` references to their parents and `Rc`
+//! `Rc` references to its children. However, all the public funcionality is done 
+//! through `RefNode<T>`, which are a wrapper around the well known 
+//! `Rc<RefCell<Node<T>>>` structures.
+
 use std::rc::{Rc, Weak};
 use std::cell::RefCell;
 
@@ -43,26 +50,73 @@ impl<T> WeakRefNode<T> {
 }
 
 
+/// A reference to a binary tree node.
 #[derive(PartialEq, Debug, PartialOrd)]
 pub struct RefNode<T>(Rc<RefCell<Node<T>>>);
 
 impl<T> RefNode<T> {
+    /// Create a new node containing `value`, with no children or ancestors. 
+    /// Returns a `RefNode` to it.
+    /// 
+    /// # Examples
+    /// 
+    /// ```
+    /// # use ods::binary_tree::RefNode;
+    /// let node = RefNode::new(0);
+    /// ```
     pub fn new(value: T) -> Self {
         Self(Rc::new(RefCell::new(Node::new(value))))
     }
 
+    /// Returns `true` if the node referenced is a root node, otherwise `false`.
+    /// 
+    /// # Examples
+    /// 
+    /// ```
+    /// # use ods::binary_tree::RefNode;
+    /// let node = RefNode::new(0);
+    /// assert!(node.is_root());
+    /// ```
     pub fn is_root(&self) -> bool {
         self.get_parent().is_none()
     }
 
+    /// Returns `true` if the node has both children, otherwise `false`.
+    /// 
+    /// # Examples
+    /// 
+    /// ```
+    /// # use ods::binary_tree::RefNode;
+    /// let node = RefNode::new(0);
+    /// assert!(!node.is_fully_branched());
+    /// ```
     pub fn is_fully_branched(&self) -> bool {
         self.get_left().is_some() && self.get_right().is_some()
     }
 
+    /// Returns a reference to the parent node, `None` if there are no ancestors.
+    /// 
+    /// # Examples
+    /// 
+    /// ```
+    /// # use ods::binary_tree::RefNode;
+    /// let node = RefNode::new(0);
+    /// assert!(node.get_parent().is_none());
+    /// ```
     pub fn get_parent(&self) -> Option<RefNode<T>> {
         self.0.borrow().parent.upgrade()
     }
 
+    /// Sets `node` as the new parent.
+    /// 
+    /// # Examples
+    /// 
+    /// ```
+    /// # use ods::binary_tree::RefNode;
+    /// let child_node = RefNode::new(0);
+    /// let parent_node = RefNode::new(1);
+    /// child_node.set_parent(Some(&parent_node));
+    /// ```
     pub fn set_parent(&self, node: Option<&RefNode<T>>) {
         self.0.borrow_mut().parent = match node {
             None => WeakRefNode::new(),
@@ -70,30 +124,102 @@ impl<T> RefNode<T> {
         };
     }
 
+    /// Returns a reference to the left node, `None` if there is no child.
+    /// 
+    /// # Examples
+    /// 
+    /// ```
+    /// # use ods::binary_tree::RefNode;
+    /// let node = RefNode::new(0);
+    /// assert!(node.get_left().is_none());
+    /// ```
     pub fn get_left(&self) -> Option<RefNode<T>> {
         self.0.borrow().left.as_ref().map(RefNode::clone)
     }
 
+    /// Sets `node` as the new left child.
+    /// 
+    /// # Examples
+    /// 
+    /// ```
+    /// # use ods::binary_tree::RefNode;
+    /// let parent_node = RefNode::new(0);
+    /// let child_node = RefNode::new(1);
+    /// parent_node.set_left(Some(&child_node));
+    /// ```
     pub fn set_left(&self, node: Option<&RefNode<T>>) {
         self.0.borrow_mut().left = node.map(RefNode::clone);
     }
 
+    /// Returns a reference to the right node, `None` if there is no child.
+    /// 
+    /// # Examples
+    /// 
+    /// ```
+    /// # use ods::binary_tree::RefNode;
+    /// let node = RefNode::new(0);
+    /// assert!(node.get_right().is_none());
+    /// ```
     pub fn get_right(&self) -> Option<RefNode<T>> {
         self.0.borrow().right.as_ref().map(RefNode::clone)
     }
 
+    /// Sets `node` as the new right child.
+    /// 
+    /// # Examples
+    /// 
+    /// ```
+    /// # use ods::binary_tree::RefNode;
+    /// let parent_node = RefNode::new(0);
+    /// let child_node = RefNode::new(1);
+    /// parent_node.set_right(Some(&child_node));
+    /// ```
     pub fn set_right(&self, node: Option<&RefNode<T>>) {
         self.0.borrow_mut().right = node.map(RefNode::clone);
     }
 
+    /// Returns the value stored in the node if `self` is the only reference to it,
+    /// `None` if more than one reference exists.
+    /// 
+    /// # Examples
+    /// 
+    /// ```
+    /// # use ods::binary_tree::RefNode;
+    /// let node = RefNode::new(0);
+    /// let value = node.into_inner_value().unwrap();
+    /// assert_eq!(value, 0);
+    /// ```
     pub fn into_inner_value(self) -> Option<T> {
         Some(Rc::into_inner(self.0)?.into_inner().value)
     }
 
+    /// Sets the value stored in the node. 
+    /// 
+    /// # Examples
+    /// 
+    /// ```
+    /// # use ods::binary_tree::RefNode;
+    /// let node = RefCell::new(0);
+    /// node.set(1);
+    /// ```
     pub(super) fn set(&self, value: T) {
         self.0.borrow_mut().value = value;
     }
 
+    /// Returns the number of nodes to reach the root.
+    /// 
+    /// # Examples
+    /// 
+    /// ```
+    /// # use ods::binary_tree::RefNode;
+    /// let parent = RefNode::new(0);
+    /// assert_eq!(parent.depth(), 0);
+    /// 
+    /// let leaf = RefNode::new(1);
+    /// parent.set_left(Some(&leaf));
+    /// leaf.set_parent(Some(&parent));
+    /// assert_eq!(leaf.depth(), 1);
+    /// ```
     pub fn depth(&self) -> usize {
         let mut depth = 0;
         let mut node_opt = self.get_parent();
@@ -105,6 +231,23 @@ impl<T> RefNode<T> {
         depth
     }
 
+    /// Returns the number of nodes under `self`, including itself.
+    /// 
+    /// # Examples
+    /// 
+    /// ```
+    /// # use ods::binary_tree::RefNode;
+    /// let parent = RefNode::new(0);
+    /// let left = RefNode::new(-1);
+    /// let right = RefNode::new(1);
+    /// 
+    /// parent.set_left(Some(&left));
+    /// parent.set_right(Some(&right));
+    /// left.set_parent(Some(&parent));
+    /// right.set_parent(Some(&parent));
+    /// 
+    /// assert_eq!(parent.size(), 3);
+    /// ```
     pub fn size(&self) -> usize {
         let mut size = 0;
         let mut nodes = vec![RefNode::clone(&self)];
@@ -123,6 +266,25 @@ impl<T> RefNode<T> {
         size
     }
 
+    /// Returns the maximum distance from `self` to any of the leafs under it. 
+    /// This implementation is recursive, and therefore there is a risk of panic 
+    /// if the tree is too large.
+    /// 
+    /// # Examples
+    /// 
+    /// ```
+    /// # use ods::binary_tree::RefNode;
+    /// let parent = RefNode::new(0);
+    /// let left = RefNode::new(-1);
+    /// let right = RefNode::new(1);
+    /// 
+    /// parent.set_left(Some(&left));
+    /// parent.set_right(Some(&right));
+    /// left.set_parent(Some(&parent));
+    /// right.set_parent(Some(&parent));
+    /// 
+    /// assert_eq!(parent.height(), 2);
+    /// ```
     pub fn height(&self) -> usize {
         fn recurse<T>(node_opt: Option<RefNode<T>>) -> usize {
             match node_opt {
