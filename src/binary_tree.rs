@@ -199,10 +199,10 @@ impl<T> RefNode<T> {
     /// 
     /// ```
     /// # use ods::binary_tree::RefNode;
-    /// let node = RefCell::new(0);
+    /// let node = RefNode::new(0);
     /// node.set(1);
     /// ```
-    pub(super) fn set(&self, value: T) {
+    pub fn set(&self, value: T) {
         self.0.borrow_mut().value = value;
     }
 
