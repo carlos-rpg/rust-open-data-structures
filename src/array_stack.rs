@@ -1,78 +1,109 @@
-use std::ops::Index;
+//! A stack backed by an array as internal storage.
+//! 
+//! In this implementation, the element located in `loc = 0` correspond to the 
+//! bottom of the stack. Iteration follows this convention as well so it will 
+//! return elements from bottom to top.
 
-pub struct ArrayStack<T: Clone> {
-    array: Vec<T>,
+use std::slice::{Iter, IterMut};
+
+
+/// A stack backed by an array as internal storage.
+pub struct ArrayStack<T> {
+    storage: Vec<T>,
 }
 
-#[derive(PartialEq, Debug)]
-pub struct IndexOutOfBounds;
 
-impl<T: Clone> ArrayStack<T> {
+impl<T> ArrayStack<T> {
+    /// Returns a new, empty `ArrayStack`.
     pub fn initialize() -> Self {
-        ArrayStack { array: Vec::new() }
+        ArrayStack { storage: Vec::new() }
     }
 
-    pub fn len(&self) -> usize {
-        self.array.len()
+    /// Returns the number of elements stored in `self`.
+    pub fn size(&self) -> usize {
+        self.storage.len()
     }
 
-    pub fn get(&self, i: usize) -> Option<T> {
-        Some(self.array.get(i)?.clone())
+    /// Returns a shared reference to the element in the position `loc` 
+    /// inside `self`, `None` if `loc` is out of bounds of `self`.
+    pub fn get(&self, i: usize) -> Option<&T> {
+        self.storage.get(i)
     }
 
-    pub fn set(&mut self, i: usize, x: T) -> Option<T> {
-        let y = self.get(i)?;
-        self.array[i] = x;
-        Some(y)
+    /// Returns a mutable reference to the element in the position `loc` 
+    /// inside `self`, `None` if `loc` is out of bounds of `self`.
+    pub fn get_mut(&mut self, loc: usize) -> Option<&mut T> {
+        self.storage.get_mut(loc)
     }
 
-    pub fn add(&mut self, i: usize, x: T) -> Result<(), IndexOutOfBounds> {
-        if i <= self.len() {
-            self.array.insert(i, x);
-            Ok(())
+    /// Inserts `value` in the position `loc`, shifting up all other values above 
+    /// `loc`. Returns `false` if `loc` if out of bounds of `self`, `true` 
+    /// otherwise.
+    /// 
+    /// Notice that `loc = self.size()` is a valid location and is equivalent to 
+    /// inserting at the top of the stack.
+    pub fn add(&mut self, loc: usize, value: T) -> bool {
+        if loc > self.size() {
+            return false;
         }
-        else {
-            Err(IndexOutOfBounds)
-        }
+        self.storage.insert(loc, value);
+        true
     }
 
-    pub fn remove(&mut self, i: usize) -> Result<T, IndexOutOfBounds> {
-        if i < self.len() {
-            let y = self.array.remove(i);
-            self.try_shrink();
-            Ok(y)
+    /// Removes the value in `loc`, shifting down all other values above `loc`. 
+    /// Returns the value in `loc` if it is not out of bounds, `None` otherwise.
+    pub fn remove(&mut self, loc: usize) -> Option<T> {
+        if loc >= self.size() {
+            return None;
         }
-        else {
-            Err(IndexOutOfBounds)
+        let value = self.storage.remove(loc);
+
+        if self.is_too_large() {
+            self.resize();
         }
+        Some(value)
     }
     
-    pub fn push(&mut self, x: T) {
-        self.array.push(x);
+    /// Inserts `value` at the top of the stack.
+    pub fn push(&mut self, value: T) {
+        self.storage.push(value);
     }
 
+    /// Removes the value at the top of the stack. Returns the value if `self` 
+    /// is not empty, otherwise `None`.
     pub fn pop(&mut self) -> Option<T> {
-        let y = self.array.pop()?;
-        self.try_shrink();
-        Some(y)
+        let value = self.storage.pop()?;
+
+        if self.is_too_large() {
+            self.resize();
+        }
+        Some(value)
     }
 
-    fn try_shrink(&mut self) -> bool {
-        if self.array.capacity() >= 3 * self.len() {
-            self.array.shrink_to(2 * self.len());
-            true
-        }
-        else {
-            false
-        }
+    fn is_too_large(&self) -> bool {
+        self.storage.capacity() >= 3 * self.size()
+    }
+
+    fn resize(&mut self) {
+        self.storage.shrink_to(2 * self.size());
+    }
+
+    pub fn iter(&self) -> Iter<T> {
+        self.storage.iter()
+    }
+
+    pub fn iter_mut(&mut self) -> IterMut<T> {
+        self.storage.iter_mut()
     }
 }
 
-impl<T: Clone> Index<usize> for ArrayStack<T> {
-    type Output = T;
 
-    fn index(&self, index: usize) -> &Self::Output {
-        &self.array[index]
+impl<T> IntoIterator for ArrayStack<T> {
+    type Item = T;
+    type IntoIter = std::vec::IntoIter<T>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.storage.into_iter()
     }
 }
 
@@ -82,80 +113,116 @@ mod tests {
     use super::*;
 
     #[test]
-    fn get_values() {
-        let stack = ArrayStack { 
-            array: vec![10, 20, 30],
+    fn get_empty_invalid_index() {
+        let stack: ArrayStack<i32> = ArrayStack { 
+            storage: vec![],
         };
-        assert_eq!(stack.get(1), Some(20));
+        assert_eq!(stack.get(0), None);
         assert_eq!(stack.get(3), None);
     }
 
     #[test]
-    fn set_values() {
-        let mut stack = ArrayStack { 
-            array: vec![10, 20, 30],
+    fn get_non_empty_invalid_index() {
+        let stack = ArrayStack { 
+            storage: vec![10, 20, 30],
         };
-        assert_eq!(stack.set(0, 1), Some(10));
-        assert_eq!(stack.array, vec![1, 20, 30]);
-        assert_eq!(stack.set(3, 4), None);
-        assert_eq!(stack.array, vec![1, 20, 30]);
+        assert_eq!(stack.get(3), None);
+        assert_eq!(stack.get(5), None);
     }
 
     #[test]
-    fn add_values() {
-        let mut stack = ArrayStack { 
-            array: vec!['a', 'b'],
+    fn get_valid_index() {
+        let stack = ArrayStack {
+            storage: vec![10, 20, 30],
         };
-        assert_eq!(stack.add(0, 'x'), Ok(()));
-        assert_eq!(stack.array, vec!['x', 'a', 'b']);
-        assert_eq!(stack.add(3, 'y'), Ok(()));
-        assert_eq!(stack.array, vec!['x', 'a', 'b', 'y']);
-        assert_eq!(stack.add(5, 'z'), Err(IndexOutOfBounds));
-        assert_eq!(stack.array, vec!['x', 'a', 'b', 'y'])
+        assert_eq!(stack.get(0), Some(&10));
+        assert_eq!(stack.get(1), Some(&20));
+        assert_eq!(stack.get(2), Some(&30));
     }
 
     #[test]
-    fn remove_values() {
-        let mut stack = ArrayStack { 
-            array: vec!['x', 'a', 'b', 'y'],
+    fn get_mut_empty_invalid_index() {
+        let mut stack: ArrayStack<i32> = ArrayStack { 
+            storage: vec![],
         };
-        assert_eq!(stack.remove(2), Ok('b'));
-        assert_eq!(stack.array, vec!['x', 'a', 'y']);
-        assert_eq!(stack.remove(3), Err(IndexOutOfBounds));
-        assert_eq!(stack.array, vec!['x', 'a', 'y']);
+        assert_eq!(stack.get_mut(0), None);
+        assert_eq!(stack.get_mut(4), None);
     }
 
     #[test]
-    fn push_values() {
-        let mut stack = ArrayStack { 
-            array: vec![],
+    fn get_mut_sets_value() {
+        let mut stack = ArrayStack {
+            storage: vec![10, 20, 30],
         };
-        stack.push("foo");
-        assert_eq!(stack.array, vec!["foo"]);
-        stack.push("bar");
-        assert_eq!(stack.array, vec!["foo", "bar"]);
+        assert_eq!(stack.get_mut(0), Some(&mut 10));
+        let elem_0 = stack.get_mut(0).unwrap();
+        *elem_0 = 1;
+        assert_eq!(stack.get_mut(0), Some(&mut 1));
     }
 
     #[test]
-    fn pop_values() {
+    fn add_from_empty_returns_outcome() {
         let mut stack = ArrayStack { 
-            array: vec!["baz"],
+            storage: vec![],
         };
-        assert_eq!(stack.pop(), Some("baz"));
+        assert!(stack.add(0, 10));
+        assert!(!stack.add(2, 10));
+        assert!(stack.add(1, 20));
+        assert!(!stack.add(3, 30));
+        assert!(stack.add(1, 200));
+    }
+
+    #[test]
+    fn add_from_empty_stores_values() {
+        let mut stack = ArrayStack { 
+            storage: vec![],
+        };
+        stack.add(0, 10);
+        assert_eq!(stack.storage, vec![10]);
+        stack.add(2, 10);
+        assert_eq!(stack.storage, vec![10]);
+        stack.add(1, 20);
+        assert_eq!(stack.storage, vec![10, 20]);
+        stack.add(3, 30);
+        assert_eq!(stack.storage, vec![10, 20]);
+        stack.add(1, 15);
+        assert_eq!(stack.storage, vec![10, 15, 20]);
+    }
+
+    #[test]
+    fn remove_returns_values() {
+        let mut stack = ArrayStack { 
+            storage: vec!['x', 'a', 'b', 'y', 'z'],
+        };
+        assert_eq!(stack.remove(4), Some('z'));
+        assert_eq!(stack.remove(4), None);
+        assert_eq!(stack.remove(0), Some('x'));
+        assert_eq!(stack.remove(0), Some('a'));
+        assert_eq!(stack.remove(1), Some('y'));
+        assert_eq!(stack.remove(1), None);
+    }
+
+    #[test]
+    fn push() {
+        let mut stack = ArrayStack { 
+            storage: vec![],
+        };
+        stack.push(0);
+        assert_eq!(stack.storage, vec![0]);
+        stack.push(1);
+        assert_eq!(stack.storage, vec![0, 1]);
+        stack.push(2);
+        assert_eq!(stack.storage, vec![0, 1, 2]);
+    }
+
+    #[test]
+    fn pop_returns_values() {
+        let mut stack = ArrayStack { 
+            storage: vec![10, 20],
+        };
+        assert_eq!(stack.pop(), Some(20));
+        assert_eq!(stack.pop(), Some(10));
         assert_eq!(stack.pop(), None);
         assert_eq!(stack.pop(), None);
-    }
-
-    #[test]
-    fn shrink_array() {
-        let mut stack = ArrayStack { 
-            array: vec![1, 2, 3],
-        };
-        assert!(!stack.try_shrink());
-        assert_eq!(stack.array.capacity(), 3);
-        stack.array.pop();
-        stack.array.pop();
-        assert!(stack.try_shrink());
-        assert_eq!(stack.array.capacity(), 2);
     }
 }
