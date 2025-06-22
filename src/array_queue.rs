@@ -1,91 +1,113 @@
-use std::usize;
-use std::ops::Index;
-
-pub struct ArrayQueue<T: Clone> {
-    array: Vec<T>,
+pub struct ArrayQueue<T> {
+    storage: Vec<Option<T>>,
     head: usize,
-    len: usize,
+    size: usize,
 }
 
-impl<T: Clone> ArrayQueue<T> {
+impl<T> ArrayQueue<T> {
     pub fn initialize() -> Self {
-        Self { array: Vec::new(), head: 0, len: 0 }
+        Self { storage: vec![None], head: 0, size: 0 }
     }
 
-    pub fn len(&self) -> usize {
-        self.len
-    }
-
-    pub fn is_full(&self) -> bool {
-        self.len() == self.array.len()
-    }
-
-    pub fn is_empty(&self) -> bool {
-        self.len() == 0
+    pub fn size(&self) -> usize {
+        self.size
     }
 
     pub fn add(&mut self, x: T) {
         if self.is_full() {
-            self.reset_array();
-            self.array.push(x);
+            self.grow(self.storage.len());
         }
-        else {
-            let i_array = self.index_array(self.len());
-            self.array[i_array] = x;
-        }
-        self.len += 1;
+        let index = self.storage_index(self.size);
+        self.storage[index] = Some(x);
+        self.size += 1;
     }
 
     pub fn remove(&mut self) -> Option<T> {
-        if !self.is_empty() {
-            let item = self[0].clone();
-            self.head = self.index_array(1);
-            self.len -= 1;
-
-            if self.array.capacity() >= 3 * self.len() {
-                self.reset_array();
-                self.array.truncate(2 * self.len());
-                self.array.shrink_to_fit();
-            }
-            Some(item)
+        if self.is_empty() {
+            return None;
         }
-        else {
-            None
+        let element = std::mem::take(&mut self.storage[self.head]);
+        self.head = self.storage_index(1);
+        self.size -= 1;
+        if self.is_too_large() {
+            self.shrink(self.storage.len() / 2);
         }
+        element
     }
 
-    fn index_array(&self, i: usize) -> usize {
-        (self.head + i) % self.array.len()
+    fn is_full(&self) -> bool {
+        self.size() == self.storage.len()
     }
 
-    fn reset_array(&mut self) {
-        self.array.rotate_left(self.head);
+    fn is_empty(&self) -> bool {
+        self.size() == 0
+    }
+
+    fn is_too_large(&self) -> bool {
+        self.storage.len() >= self.size() * 3 && self.storage.len() > 1
+    }
+
+    fn grow(&mut self, by: usize) {
+        self.storage.rotate_left(self.head);
         self.head = 0;
+        let nones = (0..by).map(|_| None);
+        self.storage.extend(nones);
+    }
+
+    fn shrink(&mut self, to: usize) {
+        self.storage.rotate_left(self.head);
+        self.head = 0;
+        self.storage.truncate(to);
+        self.storage.shrink_to(to);
+    }
+
+    fn storage_index(&self, index: usize) -> usize {
+        (self.head + index) % self.storage.len()
+    }
+
+    pub fn iter(&self) -> Iter<T> {
+        Iter { queue: self, index: 0 }
     }
 }
 
-impl<T: Clone> Index<usize> for ArrayQueue<T> {
-    type Output = T;
 
-    fn index(&self, index: usize) -> &Self::Output {
-        if index >= self.len() {
-            panic!("Index out of bounds");
+impl<T> IntoIterator for ArrayQueue<T> {
+    type Item = T;
+    type IntoIter = IntoIter<T>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        IntoIter(self)
+    }
+}
+
+pub struct IntoIter<T>(ArrayQueue<T>);
+
+impl<T> Iterator for IntoIter<T> {
+    type Item = T;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        let element = std::mem::take(&mut self.0.storage[self.0.head]);
+        self.0.head = self.0.storage_index(1);
+        element
+    }
+}
+
+pub struct Iter<'a, T> {
+    queue: &'a ArrayQueue<T>,
+    index: usize,
+}
+
+impl<'a, T> Iterator for Iter<'a, T> {
+    type Item = &'a T;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.index >= self.queue.storage.len() {
+            return None;
         }
-        &self.array[self.index_array(index)]
-    }
-}
-
-impl<T: Clone> From<Vec<T>> for ArrayQueue<T> {
-    fn from(value: Vec<T>) -> Self {
-        let value_len = value.len();
-        Self { array: value, head: 0, len: value_len }
-    }
-}
-
-impl<T: Clone> Into<Vec<T>> for ArrayQueue<T> {
-    fn into(mut self) -> Vec<T> {
-        self.reset_array();
-        self.array[..self.len()].to_vec()
+        let i = self.queue.storage_index(self.index);
+        let item = self.queue.storage[i].as_ref();
+        self.index += 1;
+        item
     }
 }
 
@@ -95,160 +117,91 @@ mod tests {
     use super::*;
 
     #[test]
-    fn initialize_queue() {
-        let queue: ArrayQueue<i32> = ArrayQueue::initialize();
-
-        assert!(queue.array.is_empty());
-        assert_eq!(queue.head, 0);
-        assert_eq!(queue.len, 0);
+    fn initialize_has_size_zero() {
+        let queue = ArrayQueue::<i32>::initialize();
+        assert_eq!(queue.size(), 0);
     }
 
     #[test]
-    #[should_panic]
-    fn index_empty_queue() {
-        let queue: ArrayQueue<i32> = ArrayQueue::initialize();
-        queue[0];
+    fn initialize_returns_empty_queue() {
+        let queue = ArrayQueue::<i32>::initialize();
+        assert_eq!(queue.iter().count(), 0);
     }
 
     #[test]
-    fn index_starts_at_zero() {
-        let queue = ArrayQueue {
-            array: vec!['a', 'b', 'c'],
-            head: 0,
-            len: 3,
-        };
-        assert_eq!(queue[0], 'a');
-        assert_eq!(queue[1], 'b');
-        assert_eq!(queue[2], 'c');
-    }
-
-    #[test]
-    fn index_starts_at_nonzero() {
-        let queue = ArrayQueue {
-            array: vec!['a', 'b', 'c'],
-            head: 1,
-            len: 3,
-        };
-        assert_eq!(queue[0], 'b');
-        assert_eq!(queue[1], 'c');
-        assert_eq!(queue[2], 'a');
-    }
-
-    #[test]
-    #[should_panic]
-    fn index_out_of_queue_bounds() {
-        let queue = ArrayQueue {
-            array: vec!['a', 'b', 'c', 'w', 'k'],
-            head: 2,
-            len: 3,
-        };
-        queue[3];
-    }
-
-    #[test]
-    fn index_when_array_and_queue_are_different_len() {
-        let queue = ArrayQueue {
-            array: vec!['a', 'b', 'c', 'w', 'k'],
-            head: 3,
-            len: 3,
-        };
-        assert_eq!(queue[0], 'w');
-        assert_eq!(queue[1], 'k');
-        assert_eq!(queue[2], 'a');
-    }
-
-    #[test]
-    fn add_to_empty_queue() {
+    fn add_from_empty_updates_size() {
         let mut queue = ArrayQueue::initialize();
+        queue.add(0);
+        assert_eq!(queue.size(), 1);
         queue.add(1);
-        assert_eq!(queue.array, vec![1]);
+        assert_eq!(queue.size(), 2);
         queue.add(2);
-        assert_eq!(queue.array, vec![1, 2]);
-        queue.add(3);
-        assert_eq!(queue.array, vec![1, 2, 3]);
+        assert_eq!(queue.size(), 3);
     }
 
     #[test]
-    fn add_with_overwrite() {
-        let mut queue = ArrayQueue {
-            array: vec!['a', 'b', 'c', 'd'],
-            head: 1,
-            len: 2,
-        };
-        queue.add('e');
-        assert_eq!(queue.array, vec!['a', 'b', 'c', 'e']);
-        queue.add('f');
-        assert_eq!(queue.array, vec!['f', 'b', 'c', 'e']);
+    fn add_from_empty_updates_queue() {
+        let mut queue = ArrayQueue::initialize();
+        queue.add(0);
+        assert_eq!(queue.iter().collect::<Vec<&i32>>(), [&0]);
+        queue.add(1);
+        assert_eq!(queue.iter().collect::<Vec<&i32>>(), [&0, &1]);
+        queue.add(2);
+        assert_eq!(queue.iter().collect::<Vec<&i32>>(), [&0, &1, &2]);
     }
 
     #[test]
-    fn add_with_reallocation() {
-        let mut queue = ArrayQueue {
-            array: vec!['a', 'b', 'c', 'd'],
-            head: 2,
-            len: 4,
-        };
-        queue.add('e');
-        assert_eq!(queue.array, vec!['c', 'd', 'a', 'b', 'e']);
+    fn remove_from_empty_keeps_size_zero() {
+        let mut queue = ArrayQueue::<i32>::initialize();
+        queue.remove();
+        assert_eq!(queue.size(), 0);
     }
 
     #[test]
-    fn remove_until_empty() {
-        let mut queue = ArrayQueue {
-            array: vec![1, 2, 3],
-            head: 0,
-            len: 3,
-        };
+    fn remove_from_empty_returns_none() {
+        let mut queue = ArrayQueue::<i32>::initialize();
+        assert!(queue.remove().is_none());
+    }
+
+    #[test]
+    fn remove_updates_size() {
+        let mut queue = ArrayQueue::initialize();
+        queue.add(0);
+        queue.add(1);
+        queue.add(2);
+
+        queue.remove();
+        assert_eq!(queue.size(), 2);
+        queue.remove();
+        assert_eq!(queue.size(), 1);
+        queue.remove();
+        assert_eq!(queue.size(), 0);
+    }
+
+    #[test]
+    fn remove_returns_some() {
+        let mut queue = ArrayQueue::initialize();
+        queue.add(0);
+        queue.add(1);
+        queue.add(2);
+
+        assert_eq!(queue.remove(), Some(0));
         assert_eq!(queue.remove(), Some(1));
         assert_eq!(queue.remove(), Some(2));
-        assert_eq!(queue.remove(), Some(3));
-        assert_eq!(queue.remove(), None);
-        assert_eq!(queue.remove(), None);
     }
 
     #[test]
-    fn remove_from_mid_array() {
-        let mut queue = ArrayQueue {
-            array: vec!['a', 'b', 'c'],
-            head: 2,
-            len: 2,
-        };
-        assert_eq!(queue.remove(), Some('c'));
-        assert_eq!(queue.remove(), Some('a'));
-        assert_eq!(queue.remove(), None);
+    fn into_iter_from_empty_returns_queue() {
+        let queue = ArrayQueue::<i32>::initialize();
+        assert_eq!(queue.into_iter().collect::<Vec<i32>>(), []);
     }
 
     #[test]
-    fn remove_with_dealocation() {
-        let mut queue = ArrayQueue {
-            array: vec![1, 2, 3, 4, 5, 6],
-            head: 4,
-            len: 6,
-        };
-        assert_eq!(queue.array.capacity(), 6);
-        queue.remove();
-        queue.remove();
-        queue.remove();
-        queue.remove();
-        assert_eq!(queue.array.capacity(), 4);
-    }
-
-    #[test]
-    fn from_vector() {
-        let queue = ArrayQueue::from(vec![true, false, true]);
-        assert_eq!(queue.array, vec![true, false, true]);
-        assert_eq!(queue.head, 0);
-        assert_eq!(queue.len, 3);
-    }
-
-    #[test]
-    fn to_vector() {
-        let queue = ArrayQueue {
-            array: vec![1, 2, 3],
-            head: 2,
-            len: 2,
-        };
-        let vector: Vec<i32> = queue.into();
-        assert_eq!(vector, vec![3, 1]);
+    fn into_iter_returns_queue() {
+        let mut queue = ArrayQueue::initialize();
+        queue.add(0);
+        queue.add(1);
+        queue.add(2);
+        assert_eq!(queue.into_iter().collect::<Vec<i32>>(), [0, 1, 2]);
     }
 }
