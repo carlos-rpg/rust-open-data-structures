@@ -1,110 +1,155 @@
-use crate::circular_vec::CircularVec;
-
-#[derive(Debug)]
-pub struct ArrayDeque<T: Clone + PartialEq> {
-    array: CircularVec<T>,
-    len: usize,
+pub struct ArrayDeque<T> {
+    storage: Vec<Option<T>>,
+    head: usize,
+    size: usize,
 }
 
-#[derive(Debug, PartialEq)]
-pub enum Error {
-    IndexOutOfBounds(usize),
-}
-
-impl<T: Clone + PartialEq> ArrayDeque<T> {
+impl<T: std::fmt::Debug> ArrayDeque<T> {
     pub fn initialize() -> Self {
-        Self { array: CircularVec::new(vec![], 0), len: 0 }
+        Self { storage: vec![None], head: 0, size: 0 }
     }
 
-    pub fn len(&self) -> usize {
-        self.len
+    pub fn size(&self) -> usize {
+        self.size
     }
 
-    pub fn is_full(&self) -> bool {
-        self.len() == self.array.len()
-    }
-
-    pub fn get(&self, i: usize) -> Result<T, Error> {
-        if !self.is_out_of_index_bounds(i) {
-            Ok(self.array[i].clone())
+    pub fn get(&self, i: usize) -> Option<&T> {
+        if self.is_out_of_indexing_bounds(i) {
+            return None;
         }
-        else {
-            Err(Error::IndexOutOfBounds(i))
+        self.storage[self.storage_index(i)].as_ref()
+    }
+
+    pub fn get_mut(&mut self, i: usize) -> Option<&mut T> {
+        if self.is_out_of_indexing_bounds(i) {
+            return None;
+        }
+        let index =self.storage_index(i);
+        self.storage[index].as_mut()
+    }
+
+    pub fn add(&mut self, i: usize, x: T) {
+        if self.is_out_of_inserting_bounds(i) {
+            panic!("Index out of bounds: {i}");
+        }
+        if self.is_full() {
+            self.grow(self.storage.len());
+        }
+        if i < self.size() / 2 {
+            self.shift_head_back();
+            for j in 0..i {
+                let a = self.storage_index(j);
+                let b = self.storage_index(j + 1);
+                self.storage.swap(a, b);
+            }
+        } else {
+            for j in (i..self.size()).rev() {
+                let a = self.storage_index(j);
+                let b = self.storage_index(j + 1);
+                self.storage.swap(a, b);
+            }
+        }
+        let j = self.storage_index(i);
+        self.storage[j] = Some(x);
+        self.size += 1;
+    }
+
+    pub fn remove(&mut self, i: usize) -> Option<T> {
+        if self.is_out_of_indexing_bounds(i) {
+            return None;
+        }
+        let j = self.storage_index(i);
+        let element = std::mem::take(&mut self.storage[j]);
+
+        if i < self.size() / 2 {
+            for j in (0..i).rev() {
+                let a = self.storage_index(j);
+                let b = self.storage_index(j + 1);
+                self.storage.swap(a, b);
+            }
+            self.shift_head_forth();
+        } else {
+            for j in i..self.size() - 1 {
+                let a = self.storage_index(j);
+                let b = self.storage_index(j + 1);
+                self.storage.swap(a, b);
+            }
+        }
+        self.size -= 1;
+        if self.is_too_large() {
+            self.shrink(self.storage.len() / 2);
+        }
+        element
+    }
+
+    pub fn iter(&self) -> Iter<T> {
+        Iter { deque: self, index: 0 }
+    }
+
+    fn grow(&mut self, by: usize) {
+        self.storage.rotate_left(self.head);
+        self.head = 0;
+        let nones = (0..by).map(|_| None);
+        self.storage.extend(nones);
+    }
+
+    fn shrink(&mut self, to: usize) {
+        self.storage.rotate_left(self.head);
+        self.head = 0;
+        self.storage.truncate(to);
+        self.storage.shrink_to(to);
+    }
+
+    fn storage_index(&self, index: usize) -> usize {
+        (self.head + index) % self.storage.len()
+    }
+
+    fn is_full(&self) -> bool {
+        self.size() == self.storage.len()
+    }
+
+    fn is_out_of_indexing_bounds(&self, i: usize) -> bool {
+        i >= self.size()
+    }
+
+    fn is_out_of_inserting_bounds(&self, i: usize) -> bool {
+        i > self.size()
+    }
+
+    fn shift_head_back(&mut self) {
+        self.head = if self.head > 0 {
+            self.head - 1
+        } else {
+            self.storage.len() - 1
         }
     }
 
-    pub fn set(&mut self, i: usize, x: T) -> Result<T, Error> {
-        let y = self.get(i)?;
-        self.array[i] = x;
-        Ok(y)
+    fn shift_head_forth(&mut self) {
+        self.head = self.storage_index(1);
     }
 
-    pub fn add(&mut self, i: usize, x: T) -> Result<(), Error> {
-        if self.is_out_of_insert_bounds(i) {
-            Err(Error::IndexOutOfBounds(i))
-        }
-        else {
-            if self.is_full() {
-                self.array.resize((2 * self.len()).max(1), x.clone());
-            }
-            if i < self.len() / 2 {
-                self.array.shift_head(-1);
-
-                for j in 0..i {
-                    self.array[j] = self.array[j + 1].clone();
-                }
-            }
-            else {
-                for j in (i + 1..=self.len()).rev() {
-                    self.array[j] = self.array[j - 1].clone();
-                }
-            }
-            self.array[i] = x;
-            self.len += 1;
-            Ok(())
-        }
-    }
-
-    pub fn remove(&mut self, i: usize) -> Result<T, Error> {
-        if self.is_out_of_index_bounds(i) {
-            Err(Error::IndexOutOfBounds(i))
-        }
-        else {
-            let x = self.array[i].clone();
-
-            if i < self.len() / 2 {
-                for j in (1..=i).rev() {
-                    self.array[j] = self.array[j - 1].clone();
-                }
-            self.array.shift_head(1);
-            }
-            else {
-                for j in i..self.len() {
-                    self.array[j] = self.array[j + 1].clone();
-                }
-            }
-            self.len -= 1;
-
-            if self.array.len() >= 3 * self.len() {
-                self.array.resize((self.array.len() / 2).max(1), x.clone());
-            }
-            Ok(x)
-        }
-    }
-
-    fn is_out_of_index_bounds(&self, i: usize) -> bool {
-        i >= self.len()
-    }
-
-    fn is_out_of_insert_bounds(&self, i: usize) -> bool {
-        i > self.len()
+    fn is_too_large(&self) -> bool {
+        self.storage.len() >= self.size() * 3 && self.storage.len() > 1
     }
 }
 
-impl<T: Clone + PartialEq> PartialEq for ArrayDeque<T> {
-    fn eq(&self, other: &Self) -> bool {
-        self.len() == other.len() &&
-        (0..self.len()).all(|i| self.array[i] == other.array[i])
+
+pub struct Iter<'a, T> {
+    deque: &'a ArrayDeque<T>,
+    index: usize,
+}
+
+impl<'a, T: std::fmt::Debug> Iterator for Iter<'a, T> {
+    type Item = &'a T;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.index >= self.deque.storage.len() {
+            return None;
+        }
+        let i = self.deque.storage_index(self.index);
+        let item = self.deque.storage[i].as_ref();
+        self.index += 1;
+        item
     }
 }
 
@@ -114,173 +159,243 @@ mod tests {
     use super::*;
 
     #[test]
-    fn get() {
-        let queue = ArrayDeque { 
-            array: CircularVec::new(vec!['a', 'b', 'c'], 2),
-            len: 2,
-        };
-        assert_eq!(queue.get(0), Ok('c'));
-        assert_eq!(queue.get(1), Ok('a'));
-        assert_eq!(queue.get(2), Err(Error::IndexOutOfBounds(2)));
+    fn initialize_has_size_zero() {
+        let deque = ArrayDeque::<i32>::initialize();
+        assert_eq!(deque.size(), 0);
     }
 
     #[test]
-    fn set_check_output() {
-        let mut queue = ArrayDeque {
-            array: CircularVec::new(vec![1, 2, 3], 1),
-            len: 2,
-        };
-        assert_eq!(queue.set(0, 20), Ok(2));
-        assert_eq!(queue.set(1, 30), Ok(3));
-        assert_eq!(queue.set(2, 10), Err(Error::IndexOutOfBounds(2)));
+    fn initialize_returns_empty_deque() {
+        let deque = ArrayDeque::<i32>::initialize();
+        assert_eq!(deque.iter().count(), 0);
     }
 
     #[test]
-    fn set_check_deque() {
-        let mut q1 = ArrayDeque {
-            array: CircularVec::new(vec![1, 2, 3], 1),
-            len: 2,
-        };
-        let _ = q1.set(0, 20);
-        let _ = q1.set(1, 30);
-        let _ = q1.set(2, 10);
-
-        let q2 = ArrayDeque {
-            array: CircularVec::new(vec![1, 20, 30], 1),
-            len: 2,
-        };
-        assert_eq!(q1, q2);
+    #[should_panic]
+    fn add_empty_out_of_bounds_panics() {
+        let mut deque = ArrayDeque::initialize();
+        deque.add(1, 0);
     }
 
     #[test]
-    fn add_back_insertion() {
-        let mut q1 = ArrayDeque {
-            array: CircularVec::new(vec![], 0),
-            len: 0,
-        };
-        let _ = q1.add(0, 'a');
-        let _ = q1.add(1, 'b');
-        let _ = q1.add(2, 'c');
-
-        let q2 = ArrayDeque {
-            array: CircularVec::new(vec!['a', 'b', 'c'], 0),
-            len: 3,
-        };
-        assert_eq!(q1, q2);
+    fn add_updates_size() {
+        let mut deque = ArrayDeque::initialize();
+        deque.add(0, 0);
+        assert_eq!(deque.size(), 1);
+        deque.add(1, 1);
+        assert_eq!(deque.size(), 2);
+        deque.add(0, 2);
+        assert_eq!(deque.size(), 3);
+        deque.add(2, 3);
+        assert_eq!(deque.size(), 4);
     }
 
     #[test]
-    fn add_front_insertion() {
-        let mut q1 = ArrayDeque {
-            array: CircularVec::new(vec![], 0),
-            len: 0,
-        };
-        let _ = q1.add(0, 'a');
-        let _ = q1.add(0, 'b');
-        let _ = q1.add(0, 'c');
-
-        let q2 = ArrayDeque {
-            array: CircularVec::new(vec!['c', 'b', 'a'], 0),
-            len: 3,
-        };
-        assert_eq!(q1, q2);
+    fn add_tail_updates_storage() {
+        let mut deque = ArrayDeque::initialize();
+        deque.add(0, 0);
+        assert_eq!(deque.iter().collect::<Vec<&i32>>(), [&0]);
+        deque.add(1, 1);
+        assert_eq!(deque.iter().collect::<Vec<&i32>>(), [&0, &1]);
+        deque.add(2, 2);
+        assert_eq!(deque.iter().collect::<Vec<&i32>>(), [&0, &1, &2]);
     }
 
     #[test]
-    fn add_mid_insertion() {
-        let mut q1 = ArrayDeque {
-            array: CircularVec::new(vec!['0', 'a', 'b', 'd', 'e', 'f', 'g', 'h', '0', '0', '0', '0'], 1),
-            len: 7,
-        };
-        let _o1 = q1.add(4, 'x');
-        let _o2 = q1.add(3, 'y');
-        let _o3 = q1.add(4, 'z');
-        let o4 = q1.add(11, '1');
-
-        let q2 = ArrayDeque {
-            array: CircularVec::new(vec!['b', 'd', 'y', 'z', 'e', 'x', 'f', 'g', 'h', '0', '0', 'a'], 11),
-            len: 10,
-        };
-        assert_eq!(q1, q2);
-        assert_eq!(o4, Err(Error::IndexOutOfBounds(11)));
+    fn add_head_updates_storage() {
+        let mut deque = ArrayDeque::initialize();
+        deque.add(0, 0);
+        assert_eq!(deque.iter().collect::<Vec<&i32>>(), [&0]);
+        deque.add(0, 1);
+        assert_eq!(deque.iter().collect::<Vec<&i32>>(), [&1, &0]);
+        deque.add(0, 2);
+        assert_eq!(deque.iter().collect::<Vec<&i32>>(), [&2, &1, &0]);
     }
 
     #[test]
-    fn partial_equivalence_full() {
-        let q1 = ArrayDeque {
-            array: CircularVec::new(vec![1, 2, 3, 4], 2),
-            len: 3,
-        };
-        let q2 = ArrayDeque {
-            array: CircularVec::new(vec![10, 3, 4, 1], 1),
-            len: 3,
-        };
-        let q3 = ArrayDeque {
-            array: CircularVec::new(vec![10, 3, 4, 1], 1),
-            len: 2,
-        };
-        assert_eq!(q1, q2);
-        assert_ne!(q2, q3);
+    #[should_panic]
+    fn add_non_empty_out_of_bounds_panics() {
+        let mut deque = ArrayDeque::initialize();
+        deque.add(0, 'a');
+        deque.add(1, 'b');
+        deque.add(0, 'c');
+        
+        deque.add(10, 'x');
     }
 
     #[test]
-    fn partial_equivalence_empty() {
-        let q1: ArrayDeque<i32> = ArrayDeque {
-            array: CircularVec::new(vec![], 0),
-            len: 0,
-        };
-        let q2 = ArrayDeque {
-            array: CircularVec::new(vec![10, 3, 4, 1], 1),
-            len: 0,
-        };
-        assert_eq!(q1, q2);
+    fn add_mid_updates_storage() {
+        let mut deque = ArrayDeque::initialize();
+        deque.add(0, 'a');
+        assert_eq!(deque.iter().collect::<Vec<&char>>(), [&'a']);
+        deque.add(1, 'b');
+        assert_eq!(deque.iter().collect::<Vec<&char>>(), [&'a', &'b']);
+        deque.add(0, 'c');
+        assert_eq!(deque.iter().collect::<Vec<&char>>(), [&'c', &'a', &'b']);
+        deque.add(1, 'd');
+        assert_eq!(deque.iter().collect::<Vec<&char>>(), [&'c', &'d', &'a', &'b']);
+        deque.add(2, 'e');
+        assert_eq!(deque.iter().collect::<Vec<&char>>(), [&'c', &'d', &'e', &'a', &'b']);
     }
 
     #[test]
-    fn remove_from_back() {
-        let mut q1: ArrayDeque<char> = ArrayDeque {
-            array: CircularVec::new(vec!['c', 'd', 'a', 'b'], 2),
-            len: 4,
-        };
-        let o1 = q1.remove(3);
-        assert_eq!(o1, Ok('d'));
-        let o2 = q1.remove(2);
-        assert_eq!(o2, Ok('c'));
-        let o3 = q1.remove(1);
-        assert_eq!(o3, Ok('b'));
-        let o4 = q1.remove(0);
-        assert_eq!(o4, Ok('a'));
-        let o5 = q1.remove(0);
-        assert_eq!(o5, Err(Error::IndexOutOfBounds(0)));
+    fn get_returns_some_reference() {
+        let mut deque = ArrayDeque::initialize();
+        deque.add(0, 'a');
+        deque.add(0, 'b');
+        deque.add(2, 'c');
 
-        let q2 = ArrayDeque {
-            array: CircularVec::new(vec!['a', 'b'], 0),
-            len: 0,
-        };
-        assert_eq!(q1, q2);
+        assert_eq!(deque.get(0), Some(&'b'));
+        assert_eq!(deque.get(1), Some(&'a'));
+        assert_eq!(deque.get(2), Some(&'c'));
     }
 
     #[test]
-    fn remove_from_front() {
-        let mut q1: ArrayDeque<char> = ArrayDeque {
-            array: CircularVec::new(vec!['c', 'd', 'a', 'b'], 2),
-            len: 4,
-        };
-        let o1 = q1.remove(0);
-        assert_eq!(o1, Ok('a'));
-        let o2 = q1.remove(0);
-        assert_eq!(o2, Ok('b'));
-        let o3 = q1.remove(0);
-        assert_eq!(o3, Ok('c'));
-        let o4 = q1.remove(0);
-        assert_eq!(o4, Ok('d'));
-        let o5 = q1.remove(0);
-        assert_eq!(o5, Err(Error::IndexOutOfBounds(0)));
+    fn get_out_of_bounds_returns_none() {
+        let mut deque = ArrayDeque::initialize();
+        assert!(deque.get(0).is_none());
+        deque.add(0, 'a');
+        assert!(deque.get(1).is_none());
+        deque.add(0, 'b');
+        assert!(deque.get(2).is_none());
+        deque.add(2, 'c');
+        assert!(deque.get(3).is_none());
+    }
 
-        let q2 = ArrayDeque {
-            array: CircularVec::new(vec!['d', 'a'], 0),
-            len: 0,
-        };
-        assert_eq!(q1, q2);
+    #[test]
+    fn get_mut_returns_some_mutable_reference() {
+        let mut deque = ArrayDeque::initialize();
+        deque.add(0, 'a');
+        deque.add(0, 'b');
+        deque.add(2, 'c');
+
+        assert_eq!(deque.get_mut(0), Some(&mut 'b'));
+        assert_eq!(deque.get_mut(1), Some(&mut 'a'));
+        assert_eq!(deque.get_mut(2), Some(&mut 'c'));
+    }
+
+    #[test]
+    fn get_mut_out_of_bounds_returns_none() {
+        let mut deque = ArrayDeque::initialize();
+        assert!(deque.get_mut(0).is_none());
+        deque.add(0, 'a');
+        assert!(deque.get_mut(1).is_none());
+        deque.add(0, 'b');
+        assert!(deque.get_mut(2).is_none());
+        deque.add(2, 'c');
+        assert!(deque.get_mut(3).is_none());
+    }
+
+    #[test]
+    fn remove_from_empty_returns_none() {
+        let mut deque = ArrayDeque::<i32>::initialize();
+        assert!(deque.remove(0).is_none());
+    }
+
+    #[test]
+    fn remove_from_empty_leaves_empty_storage() {
+        let mut deque = ArrayDeque::<i32>::initialize();
+        deque.remove(0);
+        assert_eq!(deque.iter().count(), 0);
+    }
+
+    #[test]
+    fn remove_updates_size() {
+        let mut deque = ArrayDeque::initialize();
+        deque.add(0, 'a');
+        deque.add(1, 'b');
+        deque.add(2, 'c');
+
+        deque.remove(1);
+        assert_eq!(deque.size(), 2);
+        deque.remove(1);
+        assert_eq!(deque.size(), 1);
+        deque.remove(0);
+        assert_eq!(deque.size(), 0);
+    }
+
+    #[test]
+    fn remove_tail_updates_storage() {
+        let mut deque = ArrayDeque::initialize();
+        deque.add(0, 'a');
+        deque.add(1, 'b');
+        deque.add(2, 'c');
+
+        deque.remove(2);
+        assert_eq!(deque.iter().collect::<Vec<&char>>(), [&'a', &'b']);
+        deque.remove(1);
+        assert_eq!(deque.iter().collect::<Vec<&char>>(), [&'a']);
+        deque.remove(0);
+        assert_eq!(deque.iter().count(), 0);
+    }
+
+    #[test]
+    fn remove_tail_returns_some() {
+        let mut deque = ArrayDeque::initialize();
+        deque.add(0, 'a');
+        deque.add(1, 'b');
+        deque.add(2, 'c');
+
+        assert_eq!(deque.remove(2), Some('c'));
+        assert_eq!(deque.remove(1), Some('b'));
+        assert_eq!(deque.remove(0), Some('a'));
+    }
+
+    #[test]
+    fn remove_head_updates_storage() {
+        let mut deque = ArrayDeque::initialize();
+        deque.add(0, 'a');
+        deque.add(1, 'b');
+        deque.add(2, 'c');
+
+        deque.remove(0);
+        assert_eq!(deque.iter().collect::<Vec<&char>>(), [&'b', &'c']);
+        deque.remove(0);
+        assert_eq!(deque.iter().collect::<Vec<&char>>(), [&'c']);
+        deque.remove(0);
+        assert_eq!(deque.iter().count(), 0);
+    }
+
+    #[test]
+    fn remove_head_returns_some() {
+        let mut deque = ArrayDeque::initialize();
+        deque.add(0, 'a');
+        deque.add(1, 'b');
+        deque.add(2, 'c');
+
+        assert_eq!(deque.remove(0), Some('a'));
+        assert_eq!(deque.remove(0), Some('b'));
+        assert_eq!(deque.remove(0), Some('c'));
+    }
+
+    #[test]
+    fn remove_mid_updates_storage() {
+        let mut deque = ArrayDeque::initialize();
+        deque.add(0, 'a');
+        deque.add(1, 'b');
+        deque.add(2, 'c');
+        deque.add(3, 'd');
+        deque.add(4, 'e');
+
+        deque.remove(2);
+        assert_eq!(deque.iter().collect::<Vec<&char>>(), [&'a', &'b', &'d', &'e']);
+        deque.remove(2);
+        assert_eq!(deque.iter().collect::<Vec<&char>>(), [&'a', &'b', &'e']);
+        deque.remove(1);
+        assert_eq!(deque.iter().collect::<Vec<&char>>(), [&'a', &'e']);
+    }
+
+    #[test]
+    fn remove_mid_returns_some() {
+        let mut deque = ArrayDeque::initialize();
+        deque.add(0, 'a');
+        deque.add(1, 'b');
+        deque.add(2, 'c');
+        deque.add(3, 'd');
+        deque.add(4, 'e');
+
+        assert_eq!(deque.remove(2), Some('c'));
+        assert_eq!(deque.remove(2), Some('d'));
+        assert_eq!(deque.remove(1), Some('b'));
     }
 }
