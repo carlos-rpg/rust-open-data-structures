@@ -19,65 +19,52 @@ impl<T> ArrayStack<T> {
         ArrayStack { storage: Vec::new() }
     }
 
-    /// Returns the number of elements stored in `self`.
+    /// Returns the number of elements stored.
     pub fn size(&self) -> usize {
         self.storage.len()
     }
 
-    /// Returns a shared reference to the element in the position `loc` 
-    /// inside `self`, `None` if `loc` is out of bounds of `self`.
+    /// Returns a shared reference to the element in the position `i`, or `None` 
+    /// if `i` is out of bounds.
     pub fn get(&self, i: usize) -> Option<&T> {
         self.storage.get(i)
     }
 
-    /// Returns a mutable reference to the element in the position `loc` 
-    /// inside `self`, `None` if `loc` is out of bounds of `self`.
-    pub fn get_mut(&mut self, loc: usize) -> Option<&mut T> {
-        self.storage.get_mut(loc)
-    }
-
-    /// Inserts `value` in the position `loc`, shifting up all other values above 
-    /// `loc`. Returns `false` if `loc` if out of bounds of `self`, `true` 
-    /// otherwise.
-    /// 
-    /// Notice that `loc = self.size()` is a valid location and is equivalent to 
-    /// inserting at the top of the stack.
-    pub fn add(&mut self, loc: usize, value: T) -> bool {
-        if loc > self.size() {
-            return false;
-        }
-        self.storage.insert(loc, value);
-        true
-    }
-
-    /// Removes the value in `loc`, shifting down all other values above `loc`. 
-    /// Returns the value in `loc` if it is not out of bounds, `None` otherwise.
-    pub fn remove(&mut self, loc: usize) -> Option<T> {
-        if loc >= self.size() {
+    /// Replaces the element in the position `i` with `x` and returns the 
+    /// original element. Returns `None` if `i` is out of bounds.
+    pub fn set(&mut self, i: usize, x: T) -> Option<T> {
+        if self.is_out_of_indexing_bounds(i) {
             return None;
         }
-        let value = self.storage.remove(loc);
+        let y = std::mem::replace(&mut self.storage[i], x);
+        Some(y)
+    }
+
+    /// Inserts `x` in the position `i`, shifting up all other values above 
+    /// `i`. Panics if `i` if out of bounds.
+    /// 
+    /// Notice that `i = self.size()` is a valid location and is equivalent to 
+    /// inserting at the top of the stack.
+    pub fn add(&mut self, i: usize, x: T) {
+        self.storage.insert(i, x);
+    }
+
+    /// Removes the value in `i`, shifting down all other values above `i`. 
+    /// Returns the value in `i` if it is not out of bounds, `None` otherwise.
+    pub fn remove(&mut self, i: usize) -> Option<T> {
+        if self.is_out_of_indexing_bounds(i) {
+            return None;
+        }
+        let y = self.storage.remove(i);
 
         if self.is_too_large() {
             self.resize();
         }
-        Some(value)
-    }
-    
-    /// Inserts `value` at the top of the stack.
-    pub fn push(&mut self, value: T) {
-        self.storage.push(value);
+        Some(y)
     }
 
-    /// Removes the value at the top of the stack. Returns the value if `self` 
-    /// is not empty, otherwise `None`.
-    pub fn pop(&mut self) -> Option<T> {
-        let value = self.storage.pop()?;
-
-        if self.is_too_large() {
-            self.resize();
-        }
-        Some(value)
+    fn is_out_of_indexing_bounds(&self, i: usize) -> bool {
+        i >= self.size()
     }
 
     fn is_too_large(&self) -> bool {
@@ -113,116 +100,164 @@ mod tests {
     use super::*;
 
     #[test]
-    fn get_empty_invalid_index() {
-        let stack: ArrayStack<i32> = ArrayStack { 
-            storage: vec![],
-        };
-        assert_eq!(stack.get(0), None);
-        assert_eq!(stack.get(3), None);
+    fn initialize_has_size_zero() {
+        let stack = ArrayStack::<i32>::initialize();
+        assert_eq!(stack.size(), 0);
     }
 
     #[test]
-    fn get_non_empty_invalid_index() {
-        let stack = ArrayStack { 
-            storage: vec![10, 20, 30],
-        };
-        assert_eq!(stack.get(3), None);
-        assert_eq!(stack.get(5), None);
+    fn initialize_returns_empty_stack() {
+        let stack = ArrayStack::<i32>::initialize();
+        assert_eq!(stack.iter().count(), 0);
     }
 
     #[test]
-    fn get_valid_index() {
-        let stack = ArrayStack {
-            storage: vec![10, 20, 30],
-        };
-        assert_eq!(stack.get(0), Some(&10));
-        assert_eq!(stack.get(1), Some(&20));
-        assert_eq!(stack.get(2), Some(&30));
+    fn add_updates_size() {
+        let mut stack = ArrayStack::initialize();
+        stack.add(0, 'a');
+        assert_eq!(stack.size(), 1);
+        stack.add(0, 'b');
+        assert_eq!(stack.size(), 2);
+        stack.add(0, 'c');
+        assert_eq!(stack.size(), 3);
     }
 
     #[test]
-    fn get_mut_empty_invalid_index() {
-        let mut stack: ArrayStack<i32> = ArrayStack { 
-            storage: vec![],
-        };
-        assert_eq!(stack.get_mut(0), None);
-        assert_eq!(stack.get_mut(4), None);
+    fn add_head_updates_storage() {
+        let mut stack = ArrayStack::initialize();
+        stack.add(0, 'a');
+        assert_eq!(stack.iter().collect::<Vec<&char>>(), [&'a']);
+        stack.add(1, 'b');
+        assert_eq!(stack.iter().collect::<Vec<&char>>(), [&'a', &'b']);
+        stack.add(2, 'c');
+        assert_eq!(stack.iter().collect::<Vec<&char>>(), [&'a', &'b', &'c']);
     }
 
     #[test]
-    fn get_mut_sets_value() {
-        let mut stack = ArrayStack {
-            storage: vec![10, 20, 30],
-        };
-        assert_eq!(stack.get_mut(0), Some(&mut 10));
-        let elem_0 = stack.get_mut(0).unwrap();
-        *elem_0 = 1;
-        assert_eq!(stack.get_mut(0), Some(&mut 1));
+    fn add_tail_updates_storage() {
+        let mut stack = ArrayStack::initialize();
+        stack.add(0, 'a');
+        assert_eq!(stack.iter().collect::<Vec<&char>>(), [&'a']);
+        stack.add(0, 'b');
+        assert_eq!(stack.iter().collect::<Vec<&char>>(), [&'b', &'a']);
+        stack.add(0, 'c');
+        assert_eq!(stack.iter().collect::<Vec<&char>>(), [&'c', &'b', &'a']);
     }
 
     #[test]
-    fn add_from_empty_returns_outcome() {
-        let mut stack = ArrayStack { 
-            storage: vec![],
-        };
-        assert!(stack.add(0, 10));
-        assert!(!stack.add(2, 10));
-        assert!(stack.add(1, 20));
-        assert!(!stack.add(3, 30));
-        assert!(stack.add(1, 200));
+    fn get_returns_shared_reference() {
+        let mut stack = ArrayStack::initialize();
+        stack.add(0, 'a');
+        stack.add(1, 'b');
+        stack.add(1, 'c');
+
+        assert_eq!(stack.get(0), Some(&'a'));
+        assert_eq!(stack.get(1), Some(&'c'));
+        assert_eq!(stack.get(2), Some(&'b'));
     }
 
     #[test]
-    fn add_from_empty_stores_values() {
-        let mut stack = ArrayStack { 
-            storage: vec![],
-        };
-        stack.add(0, 10);
-        assert_eq!(stack.storage, vec![10]);
-        stack.add(2, 10);
-        assert_eq!(stack.storage, vec![10]);
-        stack.add(1, 20);
-        assert_eq!(stack.storage, vec![10, 20]);
-        stack.add(3, 30);
-        assert_eq!(stack.storage, vec![10, 20]);
-        stack.add(1, 15);
-        assert_eq!(stack.storage, vec![10, 15, 20]);
+    fn get_out_of_bounds_returns_none() {
+        let stack = ArrayStack::<i32>::initialize();
+        assert!(stack.get(1).is_none());
+        assert!(stack.get(2).is_none());
     }
 
     #[test]
-    fn remove_returns_values() {
-        let mut stack = ArrayStack { 
-            storage: vec!['x', 'a', 'b', 'y', 'z'],
-        };
-        assert_eq!(stack.remove(4), Some('z'));
-        assert_eq!(stack.remove(4), None);
-        assert_eq!(stack.remove(0), Some('x'));
+    fn set_mutates_storage() {
+        let mut stack = ArrayStack::initialize();
+        stack.add(0, 'a');
+        stack.add(1, 'b');
+        stack.add(1, 'c');
+
+        stack.set(0, 'x');
+        assert_eq!(stack.iter().collect::<Vec<&char>>(), [&'x', &'c', &'b']);
+        stack.set(2, 'z');
+        assert_eq!(stack.iter().collect::<Vec<&char>>(), [&'x', &'c', &'z']);
+    }
+
+    #[test]
+    fn set_returns_prior_element() {
+        let mut stack = ArrayStack::initialize();
+        stack.add(0, 'a');
+        stack.add(1, 'b');
+        stack.add(1, 'c');
+
+        assert_eq!(stack.set(0, 'x'), Some('a'));
+        assert_eq!(stack.set(2, 'z'), Some('b'));
+    }
+
+    #[test]
+    fn set_out_of_bounds_returns_none() {
+        let mut stack = ArrayStack::initialize();
+        assert!(stack.set(1, 'a').is_none());
+        assert!(stack.set(2, 'a').is_none());
+    }
+
+    #[test]
+    fn remove_updates_size() {
+        let mut stack = ArrayStack::initialize();
+        stack.add(0, 'a');
+        stack.add(1, 'b');
+        stack.add(2, 'c');
+
+        stack.remove(1);
+        assert_eq!(stack.size(), 2);
+        stack.remove(1);
+        assert_eq!(stack.size(), 1);
+        stack.remove(0);
+        assert_eq!(stack.size(), 0);
+    }
+
+    #[test]
+    fn remove_out_of_bounds_returns_none() {
+        let mut stack = ArrayStack::<i32>::initialize();
+        assert!(stack.remove(0).is_none());
+        assert!(stack.remove(1).is_none());
+    }
+
+    #[test]
+    fn remove_head_updates_storage() {
+        let mut stack = ArrayStack::initialize();
+        stack.add(0, 'a');
+        stack.add(1, 'b');
+        stack.add(2, 'c');
+        stack.add(3, 'd');
+
+        stack.remove(3);
+        assert_eq!(stack.iter().collect::<Vec<&char>>(), [&'a', &'b', &'c']);
+        stack.remove(2);
+        assert_eq!(stack.iter().collect::<Vec<&char>>(), [&'a', &'b']);
+        stack.remove(1);
+        assert_eq!(stack.iter().collect::<Vec<&char>>(), [&'a']);
+    }
+
+    #[test]
+    fn remove_tail_updates_storage() {
+        let mut stack = ArrayStack::initialize();
+        stack.add(0, 'a');
+        stack.add(1, 'b');
+        stack.add(2, 'c');
+        stack.add(3, 'd');
+
+        stack.remove(0);
+        assert_eq!(stack.iter().collect::<Vec<&char>>(), [&'b', &'c', &'d']);
+        stack.remove(0);
+        assert_eq!(stack.iter().collect::<Vec<&char>>(), [&'c', &'d']);
+        stack.remove(0);
+        assert_eq!(stack.iter().collect::<Vec<&char>>(), [&'d']);
+    }
+
+    #[test]
+    fn remove_returns_value() {
+        let mut stack = ArrayStack::initialize();
+        stack.add(0, 'a');
+        stack.add(1, 'b');
+        stack.add(2, 'c');
+        stack.add(3, 'd');
+
+        assert_eq!(stack.remove(1), Some('b'));
+        assert_eq!(stack.remove(2), Some('d'));
         assert_eq!(stack.remove(0), Some('a'));
-        assert_eq!(stack.remove(1), Some('y'));
-        assert_eq!(stack.remove(1), None);
-    }
-
-    #[test]
-    fn push() {
-        let mut stack = ArrayStack { 
-            storage: vec![],
-        };
-        stack.push(0);
-        assert_eq!(stack.storage, vec![0]);
-        stack.push(1);
-        assert_eq!(stack.storage, vec![0, 1]);
-        stack.push(2);
-        assert_eq!(stack.storage, vec![0, 1, 2]);
-    }
-
-    #[test]
-    fn pop_returns_values() {
-        let mut stack = ArrayStack { 
-            storage: vec![10, 20],
-        };
-        assert_eq!(stack.pop(), Some(20));
-        assert_eq!(stack.pop(), Some(10));
-        assert_eq!(stack.pop(), None);
-        assert_eq!(stack.pop(), None);
     }
 }
