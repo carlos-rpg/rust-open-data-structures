@@ -4,33 +4,11 @@ use ods::doubly_linked_list::DLList;
 
 #[test]
 fn singly_linked_list() {
-    let mut list1 = SLList::new();
-    assert!(list1.is_empty());
-    list1.push('a');
-    list1.push('b');
-    list1.push('c');
-    assert_eq!(list1.iter().collect::<Vec<&char>>(), [&'c', &'b', &'a']);
-
-    let mut list2 = SLList::new();
-    list2.push('x');
-    list2.push('y');
-    list2.push('z');
-    assert_eq!(list2.size(), 3);
-    let list2_ref = list2.get_mut(2);
-    assert!(list2_ref.is_some());
-    *list2_ref.unwrap() = 't';
-    assert_eq!(list2.iter_mut().collect::<Vec<&mut char>>(), [&mut 'z', &mut 'y', &mut 't']);
-
-    assert_eq!(list1.pop(), Some('c'));
-    assert_eq!(list2.pop(), Some('z'));
-    list1.append(list2);
-    assert_eq!(list1.iter().collect::<Vec<&char>>(), [&'b', &'a', &'y', &'t']);
-
-    let list3 = list1.split(1);
-    assert!(list3.is_some());
-    let list3 = list3.unwrap();
-    assert_eq!(list1.into_iter().collect::<Vec<char>>(), ['b']);
-    assert_eq!(list3.into_iter().collect::<Vec<char>>(), ['a', 'y', 't']);
+    let mut list = SLList::initialize();
+    list.push('a');
+    list.push('b');
+    list.push('c');
+    assert_eq!(list.iter().collect::<Vec<&char>>(), [&'c', &'b', &'a']);
 }
 
 

@@ -1,6 +1,6 @@
 //! A stack backed by an array as internal storage.
 //! 
-//! In this implementation, the element located in `loc = 0` correspond to the 
+//! In this implementation, the element located at index 0 correspond to the 
 //! bottom of the stack. Iteration follows this convention as well so it will 
 //! return elements from bottom to top.
 
