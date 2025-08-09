@@ -1,25 +1,74 @@
+//! A simple, unbalanced binary search tree.
+//! 
+//! A binary search tree obeys the rule that all nodes to the left of any given 
+//! node `N` store a value less than the value stored in 'N', and at the same time,
+//! all nodes to the right of any given node `N` store a value greater than the 
+//! value stored in `N`.
+//! 
+//! Since this implementation features no mean to balance the trees, operations 
+//! on `BinarySearchTree` have a worse case algorithmical complexity of *O(n)*.
+
 use crate::binary_tree::*;
 
+/// A binary search tree data structure.
 pub struct BinarySearchTree<T> {
     root: Option<RefNode<T>>,
     size: usize,
 }
 
 impl<T> BinarySearchTree<T> {
+    /// Creates a new, empty binary search tree.
+    /// 
+    /// # Examples
+    /// 
+    /// ```
+    /// # use ods::binary_search_tree::BinarySearchTree;
+    /// let tree: BinarySearchTree<i32> = BinarySearchTree::new();
+    /// ```
     pub fn new() -> BinarySearchTree<T> {
         Self { root: None, size: 0 }
     }
 
+    /// Returns the number of nodes contained in `self`.
+    /// 
+    /// # Examples
+    /// 
+    /// ```
+    /// # use ods::binary_search_tree::BinarySearchTree;
+    /// let tree: BinarySearchTree<i32> = BinarySearchTree::new();
+    /// assert_eq!(tree.size(), 0);
+    /// ```
     pub fn size(&self) -> usize {
         self.size
     }
 
+    /// Returns `true` if the size of the tree is zero, `false` otherwise.
+    /// 
+    /// # Examples
+    /// 
+    /// ```
+    /// # use ods::binary_search_tree::BinarySearchTree;
+    /// let tree: BinarySearchTree<i32> = BinarySearchTree::new();
+    /// assert!(tree.is_empty());
+    /// ```
     pub fn is_empty(&self) -> bool {
         self.root.is_none()
     }
 }
 
 impl<T: PartialOrd> BinarySearchTree<T> {
+    /// Returns a reference to the node in `self` that contains `value`, or `None` 
+    /// if `value` is not in `self`.
+    /// 
+    /// # Examples
+    /// 
+    /// ```
+    /// # use ods::binary_search_tree::BinarySearchTree;
+    /// let mut tree = BinarySearchTree::new();
+    /// assert!(tree.find(0).is_none());
+    /// tree.add(0);
+    /// assert!(tree.find(0).is_some());
+    /// ```
     pub fn find(&self, value: T) -> Option<RefNode<T>> {
         let value_node = RefNode::new(value);
         let mut node_opt = self.root.clone();
@@ -54,6 +103,17 @@ impl<T: PartialOrd> BinarySearchTree<T> {
         last_node
     }
 
+    /// Adds `value` to the tree `self`. Returns `false` if `value` is already 
+    /// in `self`, otherwise `true`.
+    /// 
+    /// # Examples
+    /// 
+    /// ```
+    /// # use ods::binary_search_tree::BinarySearchTree;
+    /// let mut tree = BinarySearchTree::new();
+    /// assert!(tree.add(0));
+    /// assert!(!tree.add(0));
+    /// ```
     pub fn add(&mut self, value: T) -> bool {
         let new_node = RefNode::new(value);
 
@@ -129,6 +189,18 @@ impl<T: PartialOrd> BinarySearchTree<T> {
         node.set(min_value);
     }
 
+    /// Removes `value` from the tree `self`. Returns `false` if `value` is not 
+    /// in `self`, otherwise `true`.
+    /// 
+    /// # Examples
+    /// 
+    /// ```
+    /// # use ods::binary_search_tree::BinarySearchTree;
+    /// let mut tree = BinarySearchTree::new();
+    /// tree.add(0);
+    /// assert!(tree.remove(0));
+    /// assert!(!tree.remove(0));
+    /// ```
     pub fn remove(&mut self, value: T) -> bool {
         let node = match self.find(value) {
             None => return false,
