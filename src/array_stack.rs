@@ -75,11 +75,11 @@ impl<T> ArrayStack<T> {
         self.storage.shrink_to(2 * self.size());
     }
 
-    pub fn iter(&self) -> Iter<T> {
+    pub fn iter(&self) -> Iter<'_, T> {
         self.storage.iter()
     }
 
-    pub fn iter_mut(&mut self) -> IterMut<T> {
+    pub fn iter_mut(&mut self) -> IterMut<'_, T> {
         self.storage.iter_mut()
     }
 }

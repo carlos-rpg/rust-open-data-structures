@@ -13,3 +13,5 @@ pub mod linear_hash_table;
 
 pub mod binary_tree;
 pub mod binary_search_tree;
+
+pub mod adjacency_matrix;

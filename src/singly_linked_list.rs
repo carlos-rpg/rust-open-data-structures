@@ -98,7 +98,7 @@ impl<T> SLList<T> {
     /// list.push('a');
     /// assert_eq!(list.iter().next(), Some(&'a'));
     /// ```
-    pub fn iter(&self) -> Iter<T> {
+    pub fn iter(&self) -> Iter<'_, T> {
         Iter(self.head.as_ref())
     }
 
@@ -112,7 +112,7 @@ impl<T> SLList<T> {
     /// list.push('a');
     /// assert_eq!(list.iter_mut().next(), Some(&mut 'a'));
     /// ```
-    pub fn iter_mut(&mut self) -> IterMut<T> {
+    pub fn iter_mut(&mut self) -> IterMut<'_, T> {
         IterMut(self.head.as_mut())
     }
 }

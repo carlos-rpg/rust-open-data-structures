@@ -65,7 +65,7 @@ impl<T> ArrayQueue<T> {
         (self.head + index) % self.storage.len()
     }
 
-    pub fn iter(&self) -> Iter<T> {
+    pub fn iter(&self) -> Iter<'_, T> {
         Iter { queue: self, index: 0 }
     }
 }

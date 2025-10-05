@@ -201,7 +201,7 @@ impl<T> DLList<T> {
     /// list.push_head('g');
     /// assert_eq!(*list.get_head().unwrap(), 'g');
     /// ```
-    pub fn get_head(&self) -> Option<Ref<T>> {
+    pub fn get_head(&self) -> Option<Ref<'_, T>> {
         let ref_node = self.head.as_ref()?.borrow();
         Some(Ref::map(ref_node, |node| &node.value))
     }
@@ -218,7 +218,7 @@ impl<T> DLList<T> {
     /// list.push_tail('g');
     /// assert_eq!(*list.get_tail().unwrap(), 'g');
     /// ```
-    pub fn get_tail(&self) -> Option<Ref<T>> {
+    pub fn get_tail(&self) -> Option<Ref<'_, T>> {
         let ref_node = self.tail.as_ref()?.borrow();
         Some(Ref::map(ref_node, |node| &node.value))
     }
@@ -238,7 +238,7 @@ impl<T> DLList<T> {
     /// *mut_head_ref = 'x';
     /// assert_eq!(*mut_head_ref, 'x');
     /// ```
-    pub fn get_mut_head(&self) -> Option<RefMut<T>> {
+    pub fn get_mut_head(&self) -> Option<RefMut<'_, T>> {
         let ref_node = self.head.as_ref()?.borrow_mut();
         Some(RefMut::map(ref_node, |node| &mut node.value))
     }
@@ -258,7 +258,7 @@ impl<T> DLList<T> {
     /// *mut_tail_ref = 'x';
     /// assert_eq!(*mut_tail_ref, 'x');
     /// ```
-    pub fn get_mut_tail(&self) -> Option<RefMut<T>> {
+    pub fn get_mut_tail(&self) -> Option<RefMut<'_, T>> {
         let ref_node = self.tail.as_ref()?.borrow_mut();
         Some(RefMut::map(ref_node, |node| &mut node.value))
     }

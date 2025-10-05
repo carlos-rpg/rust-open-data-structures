@@ -90,7 +90,7 @@ impl<H: DimHasher> LinearHashTable<H> {
         }
     }
 
-    pub fn iter(&self) -> LinearHashTableIterator<H> {
+    pub fn iter(&self) -> LinearHashTableIterator<'_, H> {
         LinearHashTableIterator { ref_to: self, index: 0}
     }
 
